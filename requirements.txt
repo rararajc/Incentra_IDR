@@ -4,3 +4,4 @@ geopandas
 requests
 xlsxwriter
 pyogrio
+openpyxl
