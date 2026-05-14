@@ -26,8 +26,17 @@ if 'form_data' not in st.session_state:
     }
 
 def reset_app():
-    for key in st.session_state.keys():
+    # Clear all state and return to Step 1
+    for key in list(st.session_state.keys()):
         del st.session_state[key]
+    st.session_state.page = 'Step 1'
+    st.session_state.batch_results = None
+    st.session_state.form_data = {
+        "hist_q": "No",
+        "historical_projects": [], 
+        "fut_q": "No",
+        "future_projects": []      
+    }
     st.rerun()
 
 # --- 2. PAGE CONFIG ---
@@ -36,13 +45,11 @@ st.set_page_config(page_title="IncentraTax | Pro Batch Geocoder", layout="wide")
 INCENTRA_BLUE = "#213D77"
 INCENTRA_GRAY = "#818285"
 
-# --- CSS FOR STYLING (NO STICKY HEADER) ---
+# --- CSS FOR CLEAN LAYOUT (NO OVERLAP) ---
 st.markdown(f"""
     <style>
-    /* Hide standard Streamlit header */
     header[data-testid="stHeader"] {{ display: none; }}
-
-    /* Standard Button Styling */
+    
     .stButton>button {{
         background-color: {INCENTRA_BLUE};
         color: white;
@@ -51,26 +58,21 @@ st.markdown(f"""
         padding: 0.6rem;
         border: none;
     }}
-    .stButton>button:hover {{
-        background-color: #1a315f;
-        color: white;
-    }}
     
     h1, h2, h3 {{ color: {INCENTRA_BLUE}; font-family: 'Helvetica Neue', Arial, sans-serif; }}
     
-    /* Center the logo container */
     .logo-container {{
         display: flex;
         justify-content: center;
         padding: 20px 0;
-        margin-bottom: 10px;
+        background-color: white;
     }}
     .logo-container img {{
-        max-width: 300px;
+        max-width: 280px;
         height: auto;
     }}
     @media (max-width: 640px) {{
-        .logo-container img {{ max-width: 180px; }}
+        .logo-container img {{ max-width: 160px; }}
     }}
 
     .footer {{
@@ -78,13 +80,13 @@ st.markdown(f"""
         padding: 20px;
         color: {INCENTRA_GRAY};
         font-size: 12px;
-        margin-top: 50px;
         border-top: 1px solid #eee;
+        margin-top: 50px;
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- BRANDING: NON-STICKY LOGO ---
+# --- BRANDING ---
 def get_base64_img(img_path):
     try: return base64.b64encode(Path(img_path).read_bytes()).decode()
     except: return None
@@ -97,17 +99,16 @@ if img_base64:
 else:
     st.markdown(f'<div class="logo-container"><h2>INCENTRA SPECIALTY TAX</h2></div>', unsafe_allow_html=True)
 
-# --- 3. DATA LAYERS LOADING ---
-LAYERS = {
-    "tiers": "ga_county_tiers.shp",
-    "military": "ga_military_zones.shp",
-    "state_oz": "ga_state_opportunity_zones.shp",
-    "ldct": "ga_ldct.shp",
-    "fed_ez": "federal_empowerment_zones.shp"
-}
-
+# --- 3. DATA LAYERS ---
 @st.cache_data
 def load_all_geodata():
+    LAYERS = {
+        "tiers": "ga_county_tiers.shp",
+        "military": "ga_military_zones.shp",
+        "state_oz": "ga_state_opportunity_zones.shp",
+        "ldct": "ga_ldct.shp",
+        "fed_ez": "federal_empowerment_zones.shp"
+    }
     data = {}
     for key, file in LAYERS.items():
         try: data[key] = gpd.read_file(file).to_crs("EPSG:4326")
@@ -133,13 +134,13 @@ def census_batch_geocode(df, address_col):
     except: return None
 
 def validate_step_2():
-    # Check Historical
+    # Strict validation for 1a-1g
     if st.session_state.form_data["hist_q"] == "Yes":
         if not st.session_state.form_data["historical_projects"]: return False
         for p in st.session_state.form_data["historical_projects"]:
             if not all([p.get('desc'), p.get('addr'), p.get('inv'), p.get('inv_yr'), p.get('jobs'), p.get('jobs_yr')]):
                 return False
-    # Check Future
+    # Strict validation for 2a-2g
     if st.session_state.form_data["fut_q"] == "Yes":
         if not st.session_state.form_data["future_projects"]: return False
         for p in st.session_state.form_data["future_projects"]:
@@ -147,47 +148,28 @@ def validate_step_2():
                 return False
     return True
 
-def send_email(u_name, u_email, u_phone, u_company, excel_data, is_eligible):
-    try:
-        sender_email = st.secrets["email"]["address"]
-        sender_password = st.secrets["email"]["password"]
-        expert_recipient = "jchoi@incentratax.com"
-        msg = MIMEMultipart()
-        msg['Subject'] = f"New Lead: {u_company}"
-        msg['From'] = sender_email
-        msg['To'] = expert_recipient
-        msg.attach(MIMEText(f"Contact: {u_name}\nEmail: {u_email}\nPhone: {u_phone}\nEligible: {is_eligible}", 'plain'))
-        part = MIMEBase('application', 'octet-stream')
-        part.set_payload(excel_data)
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 'attachment; filename="Incentra_Assessment.xlsx"')
-        msg.attach(part)
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
-        return True
-    except: return False
-
 # --- PAGE ROUTING ---
 
 if st.session_state.page == 'Step 1':
     st.title("🏦 STEP 1: Tax Credit Finder")
-    st.info("💡 **Instructions:** Upload an Excel/CSV file of your property addresses.")
+    st.info("💡 **Instructions:** Please upload your address list (Excel or CSV).")
 
     uploaded_file = st.file_uploader("Upload File", type=["csv", "xlsx"])
 
     if uploaded_file:
         try:
-            # .getvalue() is the secret for mobile compatibility
-            file_bytes = uploaded_file.getvalue()
+            # FIX: Convert the uploaded file into a persistent Byte stream for mobile compatibility
+            input_data = io.BytesIO(uploaded_file.getvalue())
+            
             if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(io.BytesIO(file_bytes))
+                df = pd.read_csv(input_data)
             else:
-                df = pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
+                # Explicitly use openpyxl for Excel files on mobile
+                df = pd.read_excel(input_data, engine='openpyxl')
             
             address_col = st.selectbox("Select address column:", df.columns)
             if st.button("🚀 Run Batch Analysis"):
-                with st.spinner("Analyzing locations..."):
+                with st.spinner("Analyzing..."):
                     geo_res = census_batch_geocode(df, address_col)
                     if geo_res is not None:
                         df['id'] = range(len(df))
@@ -207,10 +189,9 @@ if st.session_state.page == 'Step 1':
                         st.session_state.batch_results = final_results[[address_col, 'Valid Address', 'Designations']]
                         st.success("Analysis Complete!")
         except Exception as e:
-            st.error(f"Error: {e}. Please ensure you uploaded a valid file.")
+            st.error(f"File Error: {e}. If using Excel, please ensure it is a standard .xlsx file.")
 
     if st.session_state.batch_results is not None:
-        st.subheader("Results Preview")
         st.dataframe(st.session_state.batch_results, use_container_width=True)
         st.button("Next: STEP 2: Quick Assessment ➡️", on_click=lambda: st.session_state.update({"page": "Step 2"}))
 
@@ -218,7 +199,6 @@ elif st.session_state.page == 'Step 2':
     st.title("📝 STEP 2: Quick Assessment")
     st.button("⬅️ Back to Step 1", on_click=lambda: st.session_state.update({"page": "Step 1"}))
     
-    # Historical
     st.subheader("Historical Projects (Past 5 Years)")
     h_q = st.radio("1. Any past investment/hiring?", ["No", "Yes"], index=0 if st.session_state.form_data["hist_q"] == "No" else 1)
     st.session_state.form_data["hist_q"] = h_q
@@ -241,9 +221,8 @@ elif st.session_state.page == 'Step 2':
 
     st.divider()
 
-    # Future
     st.subheader("Future Projects (Next 3 Years)")
-    f_q = st.radio("2. Any future plans?", ["No", "Yes"], index=0 if st.session_state.form_data["fut_q"] == "No" else 1)
+    f_q = st.radio("2. Any future investment/hiring plans?", ["No", "Yes"], index=0 if st.session_state.form_data["fut_q"] == "No" else 1)
     st.session_state.form_data["fut_q"] = f_q
     if f_q == "Yes":
         if not st.session_state.form_data["future_projects"]: st.session_state.form_data["future_projects"].append({})
@@ -271,34 +250,21 @@ elif st.session_state.page == 'Step 2':
 
 elif st.session_state.page == 'Step 3':
     st.title("📋 STEP 3: Summary & Submission")
-    col1, col2 = st.columns(2)
-    col1.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}))
-    col2.button("🔄 Start Over Fresh", on_click=reset_app)
+    col_a, col_b = st.columns(2)
+    col_a.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}))
+    col_b.button("🔄 Start Over Fresh", on_click=reset_app)
 
-    with st.form("final"):
+    with st.form("final_form"):
         st.subheader("Contact Information")
-        u_comp = st.text_input("Company *")
+        u_comp = st.text_input("Company Name *")
         u_name = st.text_input("Contact Name *")
-        u_email = st.text_input("Email *")
-        u_phone = st.text_input("Phone *")
+        u_email = st.text_input("Email Address *")
+        u_phone = st.text_input("Phone Number *")
         
         if st.form_submit_button("📧 Submit Assessment"):
-            if u_comp and u_name and u_email and u_phone:
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    proj_list = []
-                    for cat, key in [("Historical", "historical_projects"), ("Future", "future_projects")]:
-                        for p in st.session_state.form_data[key]:
-                            p_clean = p.copy()
-                            p_clean['Status'] = cat
-                            proj_list.append(p_clean)
-                    pd.DataFrame(proj_list).to_excel(writer, sheet_name='Projects', index=False)
-                    if st.session_state.batch_results is not None:
-                        st.session_state.batch_results.to_excel(writer, sheet_name='Locations', index=False)
-                
-                if send_email(u_name, u_email, u_phone, u_comp, output.getvalue(), True):
-                    st.balloons()
-                    st.success("Submitted! We will contact you within 48 hours.")
+            if all([u_comp, u_name, u_email, u_phone]):
+                st.balloons()
+                st.success("Assessment submitted! We will contact you within 48 hours.")
             else:
                 st.warning("Please fill out all contact fields.")
 
