@@ -204,7 +204,7 @@ def check_qualifying_opportunity():
 
     return False, "Based on the information provided, there appears to be no immediate opportunity."
 
-def send_email_report(comp, name, email, phone, opportunity_status_text):
+def send_email_report(comp, name, email, phone, opportunity_status_text, is_qualifying):
     """Pulls credentials from st.secrets and emails evaluation summary along with an advanced Excel report."""
     try:
         SMTP_SERVER = st.secrets["smtp_server"]
@@ -302,12 +302,40 @@ def send_email_report(comp, name, email, phone, opportunity_status_text):
     part.add_header('Content-Disposition', f"attachment; filename= {filename}")
     msg.attach(part)
 
+    # ----------------------------------------------------
+    # EMAIL 2: DYNAMIC USER AUTO-RESPONDER (TO CLIENT USER)
+    # ----------------------------------------------------
+    user_msg = MIMEMultipart()
+    user_msg['From'] = SENDER_EMAIL
+    user_msg['To'] = email
+    user_msg['Subject'] = f"Incentra Specialty Tax Assessment Receipt - {comp}"
+
+    if is_qualifying:
+        user_body = f"Hello {name},\n\n"
+        user_body += f"Thank you for submitting your organization's assessment via the Incentra Tax Portal.\n\n"
+        user_body += f"We have successfully received your information. Based on our initial review, your data meets our optimization guidelines criteria. "
+        user_body += f"Our consulting team is currently analyzing your full project parameters, and we will get back to you with a comprehensive evaluation within two business days.\n\n"
+        user_body += f"Best regards,\nIncentra Specialty Tax Team"
+    else:
+        user_body = f"Hello {name},\n\n"
+        user_body += f"Thank you for submitting your organization's assessment via the Incentra Tax Portal.\n\n"
+        user_body += f"Based on the specific project thresholds and geographic locations submitted in this instance, there appears to be no immediate specialized incentive optimization opportunity available at this time.\n\n"
+        user_body += f"However, tax credit mapping criteria shift frequently. We highly encourage you to revisit this assessment tool or reach out to us directly whenever you initialize a new capital footprint project, plan facility expansions, or increase project headcounts.\n\n"
+        user_body += f"Best regards,\nIncentra Specialty Tax Team"
+
+    user_msg.attach(MIMEText(user_body, 'plain'))
+    
     # --- SMTP TRANSMISSION ENGINE ---
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
+        
+        # Dispatch Internal payload packet to you
+        server.sendmail(SENDER_EMAIL, INTERNAL_RECIPIENT, internal_msg.as_string())
+        # Dispatch External verification receipt packet to the user
+        server.sendmail(SENDER_EMAIL, email, user_msg.as_string())
+        
         server.quit()
         return True
     except Exception as e:
@@ -573,7 +601,7 @@ elif st.session_state.page == 'Step 3':
         if submit_clicked:
             if all([u_comp, u_name, u_email, u_phone]):
                 with st.spinner("Transmitting assessment report safely..."):
-                    email_sent = send_email_report(u_comp, u_name, u_email, u_phone, evaluation_text)
+                    email_sent = send_email_report(u_comp, u_name, u_email, u_phone, evaluation_text, is_qualifying)
                 
                 if email_sent:
                     st.balloons()
