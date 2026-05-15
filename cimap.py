@@ -322,21 +322,21 @@ elif st.session_state.page == 'Step 3':
         /* Force Form Submit Button to be Navy Blue with Bold Red Font and Heavy Highlights */
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
             background-color: {INCENTRA_BLUE} !important;
-            border: 2px solid #FF0000 !important; /* Thick red outline matching the text */
-            box-shadow: 0px 4px 15px rgba(255, 0, 0, 0.2) !important; /* Soft red glow underneath */
-            transition: all 0.3s ease-in-out !important; /* Smooth animation transition */
+            border: 2px solid #FF0000 !important;
+            box-shadow: 0px 4px 15px rgba(255, 0, 0, 0.2) !important;
+            transition: all 0.3s ease-in-out !important;
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] p {{
             color: #FF0000 !important; 
             font-weight: bold !important; 
-            font-size: 18px !important; /* Slightly bumped up text size for visibility */
-            letter-spacing: 0.5px !important; /* Cleaner character spacing */
+            font-size: 18px !important;
+            letter-spacing: 0.5px !important;
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"]:hover {{
             background-color: #162a53 !important;
-            border-color: #FF3333 !important; /* Brighter red border on hover */
-            transform: scale(1.02) !important; /* Subtle physically popping outward effect */
-            box-shadow: 0px 6px 20px rgba(255, 0, 0, 0.4) !important; /* Intensified red glow on hover */
+            border-color: #FF3333 !important;
+            transform: scale(1.01) !important;
+            box-shadow: 0px 6px 20px rgba(255, 0, 0, 0.4) !important;
         }}
         
         /* Transform 'Start Over Fresh' Button into a clean text link style aligned to the right */
@@ -356,73 +356,86 @@ elif st.session_state.page == 'Step 3':
         </style>
     """, unsafe_allow_html=True)
     
-    # Split layout into Summary Information (Left Column) and Submission Form (Right Column)
-    col_summary, col_form = st.columns([1, 1], gap="large")
+    # --- TOP SECTION: FULL WIDTH ASSESSMENT REVIEW ---
+    st.subheader("📊 Assessment Review")
     
-    with col_summary:
-        st.subheader("📊 Assessment Review")
-        
-        # --- LOCATION ANALYSIS SUMMARY ---
-        with st.container(border=True):
-            st.markdown("#### 📍 Location Analysis")
-            if st.session_state.batch_results is not None:
-                total_locs = len(st.session_state.batch_results)
-                
-                potential_opps = len(st.session_state.batch_results[
-                    (st.session_state.batch_results['Valid Address'] == "Yes") & 
-                    (st.session_state.batch_results['Designations'].str.strip() != "")
-                ])
-                
-                st.write(f"* **Locations Processed:** {total_locs}")
-                st.write(f"* **Locations with Potential Opportunities:** {potential_opps}")
-            else:
-                st.caption("No address batch list was processed in Step 1.")
-
-        # --- HISTORICAL PROJECTS SUMMARY ---
-        with st.container(border=True):
-            st.markdown("#### 🏛️ Historical Projects Summary")
-            if st.session_state.form_data.get("hist_q") == "No" or not st.session_state.form_data.get("historical_projects"):
-                st.write("*No historical projects reported*")
-            else:
-                for p in st.session_state.form_data["historical_projects"]:
-                    f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
-                    f_type = f_type if f_type else "Not Specified"
-                    
-                    st.write(f"**{f_type}** | Investment: ${p.get('inv', '0')} ({p.get('inv_yr', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_yr', 'N/A')})")
-
-        # --- FUTURE PROJECTS SUMMARY ---
-        with st.container(border=True):
-            st.markdown("#### 🚀 Future Projects Summary")
-            if st.session_state.form_data.get("fut_q") == "No" or not st.session_state.form_data.get("future_projects"):
-                st.write("*No future projects reported*")
-            else:
-                for p in st.session_state.form_data["future_projects"]:
-                    f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
-                    f_type = f_type if f_type else "Not Specified"
-                    
-                    st.write(f"**{f_type}** | Investment: ${p.get('inv', '0')} ({p.get('inv_time', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_time', 'N/A')})")
-        
-        # Place the Back button directly below the Future Projects container (Left Column)
-        st.write("") # Spacer padding
-        st.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
-
-    with col_form:
-        with st.form("final_form"):
-            st.subheader("👤 Contact Information")
-            u_comp = st.text_input("Company Name *")
-            u_name = st.text_input("Contact Name *")
-            u_email = st.text_input("Email Address *")
-            u_phone = st.text_input("Phone Number *")
+    # Location Analysis
+    with st.container(border=True):
+        st.markdown("#### 📍 Location Analysis")
+        if st.session_state.batch_results is not None:
+            total_locs = len(st.session_state.batch_results)
             
-            if st.form_submit_button("📧 Submit Assessment"):
-                if all([u_comp, u_name, u_email, u_phone]):
-                    st.balloons()
-                    st.success("Assessment submitted! We will contact you within 48 hours.")
-                else:
-                    st.warning("Please fill out all contact fields.")
+            potential_opps = len(st.session_state.batch_results[
+                (st.session_state.batch_results['Valid Address'] == "Yes") & 
+                (st.session_state.batch_results['Designations'].str.strip() != "")
+            ])
+            
+            st.write(f"* **Locations Processed:** {total_locs}")
+            st.write(f"* **Locations with Potential Opportunities:** {potential_opps}")
+        else:
+            st.caption("No address batch list was processed in Step 1.")
 
-        # Place the Start Over Fresh link directly below the contact form container (Right Column)
-        st.write("") # Spacer padding
-        st.button("🔄 Start Over", on_click=reset_app, key="reset_btn_step3")
+    # Historical Projects Summary
+    with st.container(border=True):
+        st.markdown("#### 🏛️ Historical Projects Summary")
+        if st.session_state.form_data.get("hist_q") == "No" or not st.session_state.form_data.get("historical_projects"):
+            st.write("*No historical projects reported*")
+        else:
+            for p in st.session_state.form_data["historical_projects"]:
+                f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
+                f_type = f_type if f_type else "Not Specified"
+                
+                # Format investment with commas if it is a valid digit string
+                raw_inv = p.get('inv', '0').replace(',', '').strip()
+                formatted_inv = f"{int(raw_inv):,}" if raw_inv.isdigit() else p.get('inv', '0')
+                
+                st.write(f"**{f_type}** | Investment: ${formatted_inv} ({p.get('inv_yr', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_yr', 'N/A')})")
+
+    # Future Projects Summary
+    with st.container(border=True):
+        st.markdown("#### 🚀 Future Projects Summary")
+        if st.session_state.form_data.get("fut_q") == "No" or not st.session_state.form_data.get("future_projects"):
+            st.write("*No future projects reported*")
+        else:
+            for p in st.session_state.form_data["future_projects"]:
+                f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
+                f_type = f_type if f_type else "Not Specified"
+                
+                # Format investment with commas if it is a valid digit string
+                raw_inv = p.get('inv', '0').replace(',', '').strip()
+                formatted_inv = f"{int(raw_inv):,}" if raw_inv.isdigit() else p.get('inv', '0')
+                
+                st.write(f"**{f_type}** | Investment: ${formatted_inv} ({p.get('inv_time', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_time', 'N/A')})")
+    
+    st.divider()
+
+    # --- BOTTOM SECTION: CONTACT FORM & NAVIGATION ---
+    with st.form("final_form"):
+        st.subheader("👤 Contact Information")
+        
+        # Split fields into 2 clean columns within the form area
+        c1, c2 = st.columns(2, gap="medium")
+        
+        # Left Side Inputs
+        u_comp = c1.text_input("Company Name *")
+        u_name = c1.text_input("Contact Name *")
+        
+        # Right Side Inputs
+        u_email = c2.text_input("Email Address *")
+        u_phone = c2.text_input("Phone Number *")
+        
+        # Highlighted submission button centered or filled underneath the details
+        if st.form_submit_button("📧 Submit Assessment"):
+            if all([u_comp, u_name, u_email, u_phone]):
+                st.balloons()
+                st.success("Assessment submitted! We will contact you within 48 hours.")
+            else:
+                st.warning("Please fill out all contact fields.")
+
+    # Lower Footer Row containing the secondary back button and clean reset link
+    st.write("") 
+    col_back, col_spacer, col_reset = st.columns([1.5, 3, 1.5])
+    col_back.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
+    col_reset.button("🔄 Start Over", on_click=reset_app, key="reset_btn_step3")
 
 st.markdown('<div class="footer">© 2026 Incentra Specialty Tax. All rights reserved.</div>', unsafe_allow_html=True)
