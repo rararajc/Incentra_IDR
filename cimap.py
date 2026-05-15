@@ -140,11 +140,15 @@ def validate_step_2():
         for p in st.session_state.form_data["historical_projects"]:
             if not all([p.get('desc'), p.get('addr'), p.get('inv'), p.get('inv_yr'), p.get('jobs'), p.get('jobs_yr')]):
                 return False
+            if p.get('type') == "other" and not p.get('type_manual', '').strip():
+                return False
     # Strict validation for 2a-2g
     if st.session_state.form_data["fut_q"] == "Yes":
         if not st.session_state.form_data["future_projects"]: return False
         for p in st.session_state.form_data["future_projects"]:
             if not all([p.get('desc'), p.get('addr'), p.get('inv'), p.get('inv_time'), p.get('jobs'), p.get('jobs_time')]):
+                return False
+            if p.get('type') == "other" and not p.get('type_manual', '').strip():
                 return False
     return True
 
@@ -232,6 +236,8 @@ elif st.session_state.page == 'Step 2':
                 p['desc'] = c1.text_input(f"1a. Description *", value=p.get('desc', ''), key=f"h1_{i}")
                 p['addr'] = c1.text_input(f"1b. Address *", value=p.get('addr', ''), key=f"h2_{i}")
                 p['type'] = c1.selectbox(f"1c. Type *", ["office", "manufacturing", "warehouse", "other"], key=f"h3_{i}")
+                if p['type'] == "other":
+                    p['type_manual'] = c1.text_input(f"Specify Facility Type *", value=p.get('type_manual', ''), key=f"h_other_{i}")
                 p['inv'] = c2.text_input(f"1d. Investment $ *", value=p.get('inv', ''), key=f"h4_{i}")
                 p['inv_yr'] = c2.text_input(f"1e. Year(s) *", value=p.get('inv_yr', ''), key=f"h5_{i}")
                 p['jobs'] = c2.text_input(f"1f. New Jobs *", value=p.get('jobs', ''), key=f"h6_{i}")
@@ -254,6 +260,8 @@ elif st.session_state.page == 'Step 2':
                 p['desc'] = c1.text_input(f"2a. Description *", value=p.get('desc', ''), key=f"f1_{i}")
                 p['addr'] = c1.text_input(f"2b. Address *", value=p.get('addr', ''), key=f"f2_{i}")
                 p['type'] = c1.selectbox(f"2c. Type *", ["office", "manufacturing", "warehouse", "other"], key=f"f3_{i}")
+                if p['type'] == "other":
+                    p['type_manual'] = c1.text_input(f"Specify Facility Type *", value=p.get('type_manual', ''), key=f"f_other_{i}")
                 p['inv'] = c2.text_input(f"2d. Projected $ *", value=p.get('inv', ''), key=f"f4_{i}")
                 p['inv_time'] = c2.text_input(f"2e. Timing *", value=p.get('inv_time', ''), key=f"f5_{i}")
                 p['jobs'] = c2.text_input(f"2f. Projected Jobs *", value=p.get('jobs', ''), key=f"f6_{i}")
