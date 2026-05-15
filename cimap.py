@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from shapely.geometry import Point
+import uuid
 
 # --- 1. INITIALIZE SESSION STATE ---
 if 'page' not in st.session_state:
@@ -26,7 +27,6 @@ if 'form_data' not in st.session_state:
     }
 
 def reset_app():
-    # Clear all state and return to Step 1
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.session_state.page = 'Step 1'
@@ -229,67 +229,80 @@ elif st.session_state.page == 'Step 2':
     h_q = st.radio("1. Any past investment/hiring?", ["No", "Yes"], index=0 if st.session_state.form_data["hist_q"] == "No" else 1)
     st.session_state.form_data["hist_q"] = h_q
     if h_q == "Yes":
-        if not st.session_state.form_data["historical_projects"]: st.session_state.form_data["historical_projects"].append({})
+        if not st.session_state.form_data["historical_projects"]: 
+            st.session_state.form_data["historical_projects"].append({"id": str(uuid.uuid4())})
         
-        # Safe deletion handler executed before rendering
+        # Track items marked for deletion
         hist_to_remove = None
-        for i in range(len(st.session_state.form_data["historical_projects"])):
-            if st.session_state.get(f"del_h_{i}"):
-                hist_to_remove = i
+        
+        for i, p in enumerate(st.session_state.form_data["historical_projects"]):
+            # Ensure every project has a unique permanent ID for widget keys
+            if 'id' not in p:
+                p['id'] = str(uuid.uuid4())
+                
+            p_id = p['id']
+            
+            with st.container(border=True):
+                c1, c2 = st.columns(2)
+                p['desc'] = c1.text_input(f"1a. Description *", value=p.get('desc', ''), key=f"h1_{p_id}")
+                p['addr'] = c1.text_input(f"1b. Address *", value=p.get('addr', ''), key=f"h2_{p_id}")
+                p['type'] = c1.selectbox(f"1c. Type *", ["office", "manufacturing", "warehouse", "other"], key=f"h3_{p_id}")
+                if p['type'] == "other":
+                    p['type_manual'] = c1.text_input(f"Specify Facility Type *", value=p.get('type_manual', ''), key=f"h_other_{p_id}")
+                p['inv'] = c2.text_input(f"1d. Investment $ *", value=p.get('inv', ''), key=f"h4_{p_id}")
+                p['inv_yr'] = c2.text_input(f"1e. Year(s) *", value=p.get('inv_yr', ''), key=f"h5_{p_id}")
+                p['jobs'] = c2.text_input(f"1f. New Jobs *", value=p.get('jobs', ''), key=f"h6_{p_id}")
+                p['jobs_yr'] = c2.text_input(f"1g. Year(s) *", value=p.get('jobs_yr', ''), key=f"h7_{p_id}")
+                
+                if st.button(f"🗑️ Remove Proj {i+1}", key=f"del_h_{p_id}"):
+                    hist_to_remove = i
 
         if hist_to_remove is not None:
             st.session_state.form_data["historical_projects"].pop(hist_to_remove)
             st.rerun()
-
-        # Render Loop
-        for i, p in enumerate(st.session_state.form_data["historical_projects"]):
-            with st.container(border=True):
-                c1, c2 = st.columns(2)
-                p['desc'] = c1.text_input(f"1a. Description *", value=p.get('desc', ''), key=f"h1_{i}")
-                p['addr'] = c1.text_input(f"1b. Address *", value=p.get('addr', ''), key=f"h2_{i}")
-                p['type'] = c1.selectbox(f"1c. Type *", ["office", "manufacturing", "warehouse", "other"], key=f"h3_{i}")
-                if p['type'] == "other":
-                    p['type_manual'] = c1.text_input(f"Specify Facility Type *", value=p.get('type_manual', ''), key=f"h_other_{i}")
-                p['inv'] = c2.text_input(f"1d. Investment $ *", value=p.get('inv', ''), key=f"h4_{i}")
-                p['inv_yr'] = c2.text_input(f"1e. Year(s) *", value=p.get('inv_yr', ''), key=f"h5_{i}")
-                p['jobs'] = c2.text_input(f"1f. New Jobs *", value=p.get('jobs', ''), key=f"h6_{i}")
-                p['jobs_yr'] = c2.text_input(f"1g. Year(s) *", value=p.get('jobs_yr', ''), key=f"h7_{i}")
-                st.button(f"🗑️ Remove Proj {i+1}", key=f"del_h_{i}")
-        st.button("➕ Add Another Historical", on_click=lambda: st.session_state.form_data["historical_projects"].append({}))
-
-    st.divider()
+            
+        if st.button("➕ Add Another Historical"):
+            st.session_state.form_data["historical_projects"].append({"id": str(uuid.uuid4())})
+            st.rerun()
 
     st.subheader("Future Projects (Next 3 Years)")
     f_q = st.radio("2. Any future investment/hiring plans?", ["No", "Yes"], index=0 if st.session_state.form_data["fut_q"] == "No" else 1)
     st.session_state.form_data["fut_q"] = f_q
     if f_q == "Yes":
-        if not st.session_state.form_data["future_projects"]: st.session_state.form_data["future_projects"].append({})
+        if not st.session_state.form_data["future_projects"]: 
+            st.session_state.form_data["future_projects"].append({"id": str(uuid.uuid4())})
         
-        # Safe deletion handler executed before rendering
+        # Track items marked for deletion
         fut_to_remove = None
-        for i in range(len(st.session_state.form_data["future_projects"])):
-            if st.session_state.get(f"del_f_{i}"):
-                fut_to_remove = i
+        
+        for i, p in enumerate(st.session_state.form_data["future_projects"]):
+            if 'id' not in p:
+                p['id'] = str(uuid.uuid4())
+                
+            p_id = p['id']
+            
+            with st.container(border=True):
+                c1, c2 = st.columns(2)
+                p['desc'] = c1.text_input(f"2a. Description *", value=p.get('desc', ''), key=f"f1_{p_id}")
+                p['addr'] = c1.text_input(f"2b. Address *", value=p.get('addr', ''), key=f"f2_{p_id}")
+                p['type'] = c1.selectbox(f"2c. Type *", ["office", "manufacturing", "warehouse", "other"], key=f"f3_{p_id}")
+                if p['type'] == "other":
+                    p['type_manual'] = c1.text_input(f"Specify Facility Type *", value=p.get('type_manual', ''), key=f"f_other_{p_id}")
+                p['inv'] = c2.text_input(f"2d. Projected $ *", value=p.get('inv', ''), key=f"f4_{p_id}")
+                p['inv_time'] = c2.text_input(f"2e. Timing *", value=p.get('inv_time', ''), key=f"f5_{p_id}")
+                p['jobs'] = c2.text_input(f"2f. Projected Jobs *", value=p.get('jobs', ''), key=f"f6_{p_id}")
+                p['jobs_time'] = c2.text_input(f"2g. Timing *", value=p.get('jobs_time', ''), key=f"f7_{p_id}")
+                
+                if st.button(f"🗑️ Remove Proj {i+1}", key=f"del_f_{p_id}"):
+                    fut_to_remove = i
 
         if fut_to_remove is not None:
             st.session_state.form_data["future_projects"].pop(fut_to_remove)
             st.rerun()
-
-        # Render Loop
-        for i, p in enumerate(st.session_state.form_data["future_projects"]):
-            with st.container(border=True):
-                c1, c2 = st.columns(2)
-                p['desc'] = c1.text_input(f"2a. Description *", value=p.get('desc', ''), key=f"f1_{i}")
-                p['addr'] = c1.text_input(f"2b. Address *", value=p.get('addr', ''), key=f"f2_{i}")
-                p['type'] = c1.selectbox(f"2c. Type *", ["office", "manufacturing", "warehouse", "other"], key=f"f3_{i}")
-                if p['type'] == "other":
-                    p['type_manual'] = c1.text_input(f"Specify Facility Type *", value=p.get('type_manual', ''), key=f"f_other_{i}")
-                p['inv'] = c2.text_input(f"2d. Projected $ *", value=p.get('inv', ''), key=f"f4_{i}")
-                p['inv_time'] = c2.text_input(f"2e. Timing *", value=p.get('inv_time', ''), key=f"f5_{i}")
-                p['jobs'] = c2.text_input(f"2f. Projected Jobs *", value=p.get('jobs', ''), key=f"f6_{i}")
-                p['jobs_time'] = c2.text_input(f"2g. Timing *", value=p.get('jobs_time', ''), key=f"f7_{i}")
-                st.button(f"🗑️ Remove Proj {i+1}", key=f"del_f_{i}")
-        st.button("➕ Add Another Future", on_click=lambda: st.session_state.form_data["future_projects"].append({}))
+            
+        if st.button("➕ Add Another Future"):
+            st.session_state.form_data["future_projects"].append({"id": str(uuid.uuid4())})
+            st.rerun()
 
     if st.button("Next: STEP 3 Summary ➡️"):
         if validate_step_2():
