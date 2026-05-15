@@ -243,7 +243,7 @@ elif st.session_state.page == 'Step 2':
                 p['jobs'] = c2.text_input(f"1f. New Jobs *", value=p.get('jobs', ''), key=f"h6_{i}")
                 p['jobs_yr'] = c2.text_input(f"1g. Year(s) *", value=p.get('jobs_yr', ''), key=f"h7_{i}")
                 if st.button(f"🗑️ Remove Proj {i+1}", key=f"del_h_{i}"):
-                    st.session_state.form_data["historical_projects"].pop(i)
+                    del st.session_state.form_data["historical_projects"][i]
                     st.rerun()
         st.button("➕ Add Another Historical", on_click=lambda: st.session_state.form_data["historical_projects"].append({}))
 
@@ -267,7 +267,7 @@ elif st.session_state.page == 'Step 2':
                 p['jobs'] = c2.text_input(f"2f. Projected Jobs *", value=p.get('jobs', ''), key=f"f6_{i}")
                 p['jobs_time'] = c2.text_input(f"2g. Timing *", value=p.get('jobs_time', ''), key=f"f7_{i}")
                 if st.button(f"🗑️ Remove Proj {i+1}", key=f"del_f_{i}"):
-                    st.session_state.form_data["future_projects"].pop(i)
+                    del st.session_state.form_data["future_projects"][i]
                     st.rerun()
         st.button("➕ Add Another Future", on_click=lambda: st.session_state.form_data["future_projects"].append({}))
 
