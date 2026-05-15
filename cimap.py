@@ -230,6 +230,18 @@ elif st.session_state.page == 'Step 2':
     st.session_state.form_data["hist_q"] = h_q
     if h_q == "Yes":
         if not st.session_state.form_data["historical_projects"]: st.session_state.form_data["historical_projects"].append({})
+        
+        # Safe deletion handler executed before rendering
+        hist_to_remove = None
+        for i in range(len(st.session_state.form_data["historical_projects"])):
+            if st.session_state.get(f"del_h_{i}"):
+                hist_to_remove = i
+
+        if hist_to_remove is not None:
+            st.session_state.form_data["historical_projects"].pop(hist_to_remove)
+            st.rerun()
+
+        # Render Loop
         for i, p in enumerate(st.session_state.form_data["historical_projects"]):
             with st.container(border=True):
                 c1, c2 = st.columns(2)
@@ -242,9 +254,7 @@ elif st.session_state.page == 'Step 2':
                 p['inv_yr'] = c2.text_input(f"1e. Year(s) *", value=p.get('inv_yr', ''), key=f"h5_{i}")
                 p['jobs'] = c2.text_input(f"1f. New Jobs *", value=p.get('jobs', ''), key=f"h6_{i}")
                 p['jobs_yr'] = c2.text_input(f"1g. Year(s) *", value=p.get('jobs_yr', ''), key=f"h7_{i}")
-                if st.button(f"🗑️ Remove Proj {i+1}", key=f"del_h_{i}"):
-                    del st.session_state.form_data["historical_projects"][i]
-                    st.rerun()
+                st.button(f"🗑️ Remove Proj {i+1}", key=f"del_h_{i}")
         st.button("➕ Add Another Historical", on_click=lambda: st.session_state.form_data["historical_projects"].append({}))
 
     st.divider()
@@ -254,6 +264,18 @@ elif st.session_state.page == 'Step 2':
     st.session_state.form_data["fut_q"] = f_q
     if f_q == "Yes":
         if not st.session_state.form_data["future_projects"]: st.session_state.form_data["future_projects"].append({})
+        
+        # Safe deletion handler executed before rendering
+        fut_to_remove = None
+        for i in range(len(st.session_state.form_data["future_projects"])):
+            if st.session_state.get(f"del_f_{i}"):
+                fut_to_remove = i
+
+        if fut_to_remove is not None:
+            st.session_state.form_data["future_projects"].pop(fut_to_remove)
+            st.rerun()
+
+        # Render Loop
         for i, p in enumerate(st.session_state.form_data["future_projects"]):
             with st.container(border=True):
                 c1, c2 = st.columns(2)
@@ -266,9 +288,7 @@ elif st.session_state.page == 'Step 2':
                 p['inv_time'] = c2.text_input(f"2e. Timing *", value=p.get('inv_time', ''), key=f"f5_{i}")
                 p['jobs'] = c2.text_input(f"2f. Projected Jobs *", value=p.get('jobs', ''), key=f"f6_{i}")
                 p['jobs_time'] = c2.text_input(f"2g. Timing *", value=p.get('jobs_time', ''), key=f"f7_{i}")
-                if st.button(f"🗑️ Remove Proj {i+1}", key=f"del_f_{i}"):
-                    del st.session_state.form_data["future_projects"][i]
-                    st.rerun()
+                st.button(f"🗑️ Remove Proj {i+1}", key=f"del_f_{i}")
         st.button("➕ Add Another Future", on_click=lambda: st.session_state.form_data["future_projects"].append({}))
 
     if st.button("Next: STEP 3 Summary ➡️"):
