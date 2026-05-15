@@ -167,7 +167,7 @@ def validate_step_2():
 # --- PAGE ROUTING ---
 
 if st.session_state.page == 'Step 1':
-    st.title("STEP 1: Tax Credit Finder")
+    st.title("STEP 1: Quick Location Analysis")
     st.info("Instructions: Please upload your address list (Excel or CSV).")
 
     # --- EXAMPLE FILE SECTION ---
