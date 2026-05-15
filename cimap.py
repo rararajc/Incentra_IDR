@@ -332,7 +332,7 @@ def send_email_report(comp, name, email, phone, opportunity_status_text, is_qual
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         
         # Dispatch Internal payload packet to you
-        server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, internal_msg.as_string())
+        server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
         # Dispatch External verification receipt packet to the user
         server.sendmail(SENDER_EMAIL, email, user_msg.as_string())
         
