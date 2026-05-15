@@ -312,15 +312,13 @@ def send_email_report(comp, name, email, phone, opportunity_status_text, is_qual
 
     if is_qualifying:
         user_body = f"Hello {name},\n\n"
-        user_body += f"Thank you for submitting your organization's assessment via the Incentra Tax Portal.\n\n"
-        user_body += f"We have successfully received your information. Based on our initial review, your data meets our optimization guidelines criteria. "
-        user_body += f"Our consulting team is currently analyzing your full project parameters, and we will get back to you with a comprehensive evaluation within two business days.\n\n"
+        user_body += f"Thank you for your submission. Our team is reviewing your information and will contact you within two business days.\n\n"
         user_body += f"Best regards,\nIncentra Specialty Tax Team"
     else:
         user_body = f"Hello {name},\n\n"
-        user_body += f"Thank you for submitting your organization's assessment via the Incentra Tax Portal.\n\n"
-        user_body += f"Based on the specific project thresholds and geographic locations submitted in this instance, there appears to be no immediate specialized incentive optimization opportunity available at this time.\n\n"
-        user_body += f"However, tax credit mapping criteria shift frequently. We highly encourage you to revisit this assessment tool or reach out to us directly whenever you initialize a new capital footprint project, plan facility expansions, or increase project headcounts.\n\n"
+        user_body += f"Thank you for submission.\n\n"
+        user_body += f"Based on the information provided, there may not be viable tax credit opportunities at this time.\n\n"
+        user_body += f"We encourage you to revisit us again when you have new investment or hiring plans.\n\n"
         user_body += f"Best regards,\nIncentra Specialty Tax Team"
 
     user_msg.attach(MIMEText(user_body, 'plain'))
