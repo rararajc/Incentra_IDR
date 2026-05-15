@@ -62,16 +62,58 @@ INCENTRA_GRAY = "#818285"
 # --- CSS FOR CLEAN LAYOUT (NO OVERLAP) ---
 st.markdown(f"""
     <style>
+    /* Import a highly modern geometric font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
     header[data-testid="stHeader"] {{ display: none; }}
-    
-    .stButton>button {{
-        background-color: {INCENTRA_BLUE};
-        color: white;
-        border-radius: 4px;
-        width: 100%;
-        padding: 0.6rem;
-        border: none;
+
+    html, body, [class*="css"]  {{
+        font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
+        background-color: transparent !important;
     }}
+
+    /* Styling headers to match the sleek style of the screenshot */
+    h1, h2, h3, h4 { 
+        color: #2c2c2c !important; 
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 400 !important; /* Emulates the clean, non-bold look */
+        letter-spacing: -0.02em !important;
+    }
+    
+    .stApp {
+    background-color: transparent !important;
+    }
+
+    /* Removes background and borders from st.container(border=True) and forms */
+    div[data-testid="stGridBlock"] > div, 
+    div[data-testid="stVerticalBlock"] > div,
+    div[data-testid="stForm"] {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Keeps the logo container background transparent */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        padding: 20px 0;
+        background-color: transparent !important;
+    }
+    
+    /* Modernize the primary buttons to match the dark pill shape in the image */
+    .stButton>button {
+        background-color: #1a1a1a !important; /* Dark charcoal/black color from image button */
+        color: white !important;
+        border-radius: 50px !important; /* Full pill-shaped rounding like the image */
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 500 !important;
+        padding: 0.75rem 2rem !important;
+        border: none !important;
+        letter-spacing: 0.5px !important;
+        text-transform: uppercase;
+        font-size: 14px !important;
+    }
     
     h1, h2, h3 {{ color: {INCENTRA_BLUE}; font-family: 'Helvetica Neue', Arial, sans-serif; }}
     
@@ -169,7 +211,7 @@ def validate_step_2():
 # --- PAGE ROUTING ---
 
 if st.session_state.page == 'Step 1':
-    st.title("🏦 STEP 1: Tax Credit Finder")
+    st.title("STEP 1: Tax Credit Finder")
     st.info("💡 **Instructions:** Please upload your address list (Excel or CSV).")
 
     # --- EXAMPLE FILE SECTION ---
@@ -208,7 +250,7 @@ if st.session_state.page == 'Step 1':
                 df = pd.read_excel(input_data, engine='openpyxl')
             
             address_col = st.selectbox("Select address column:", df.columns)
-            if st.button("🚀 Run Batch Analysis"):
+            if st.button("Run Batch Analysis"):
                 with st.spinner("Analyzing..."):
                     geo_res = census_batch_geocode(df, address_col)
                     if geo_res is not None:
@@ -236,7 +278,7 @@ if st.session_state.page == 'Step 1':
         st.button("Next: STEP 2: Quick Assessment ➡️", on_click=lambda: st.session_state.update({"page": "Step 2"}))
 
 elif st.session_state.page == 'Step 2':
-    st.title("📝 STEP 2: Quick Assessment")
+    st.title("STEP 2: Quick Assessment")
     st.button("⬅️ Back to Step 1", on_click=lambda: st.session_state.update({"page": "Step 1"}))
     
     st.subheader("Historical Projects (Past 5 Years)")
@@ -257,7 +299,7 @@ elif st.session_state.page == 'Step 2':
             p_id = p['id']
             
             with st.container(border=True):
-                st.markdown(f"#### 🏛️ Historical Project {i+1}")
+                st.markdown(f"#### Historical Project {i+1}")
                 c1, c2 = st.columns(2)
                 p['desc'] = c1.text_input(f"1a. Project Description *", value=p.get('desc', ''), key=f"h1_{p_id}")
                 p['addr'] = c1.text_input(f"1b. Project Address *", value=p.get('addr', ''), key=f"h2_{p_id}")
@@ -297,7 +339,7 @@ elif st.session_state.page == 'Step 2':
             p_id = p['id']
             
             with st.container(border=True):
-                st.markdown(f"#### 🚀 Future Project {i+1}")
+                st.markdown(f"#### Future Project {i+1}")
                 c1, c2 = st.columns(2)
                 p['desc'] = c1.text_input(f"2a. Project Description *", value=p.get('desc', ''), key=f"f1_{p_id}")
                 p['addr'] = c1.text_input(f"2b. Project Address *", value=p.get('addr', ''), key=f"f2_{p_id}")
@@ -328,7 +370,7 @@ elif st.session_state.page == 'Step 2':
             st.error("⚠️ Please fill out all required fields (*) for any projects you added.")
 
 elif st.session_state.page == 'Step 3':
-    st.title("📋 STEP 3: Summary & Submission")
+    st.title("STEP 3: Summary & Submission")
     
     # Inject custom CSS for precise Step 3 layout overrides (No custom HTML containers)
     st.markdown(f"""
