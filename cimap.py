@@ -428,7 +428,7 @@ elif st.session_state.page == 'Step 3':
         if submit_clicked:
             if all([u_comp, u_name, u_email, u_phone]):
                 st.balloons()
-                st.success("Assessment submitted! We will contact you within 48 hours.")
+                st.success("Assessment submitted! We will contact you within two business days.")
             else:
                 st.warning("Please fill out all contact fields.")
 
