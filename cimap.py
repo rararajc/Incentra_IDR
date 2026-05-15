@@ -315,22 +315,99 @@ elif st.session_state.page == 'Step 2':
 
 elif st.session_state.page == 'Step 3':
     st.title("📋 STEP 3: Summary & Submission")
-    col_a, col_b = st.columns(2)
-    col_a.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}))
-    col_b.button("🔄 Start Over Fresh", on_click=reset_app)
-
-    with st.form("final_form"):
-        st.subheader("Contact Information")
-        u_comp = st.text_input("Company Name *")
-        u_name = st.text_input("Contact Name *")
-        u_email = st.text_input("Email Address *")
-        u_phone = st.text_input("Phone Number *")
+    
+    # Inject CSS targeting only the 'Start Over' button wrapper to make it white with dark text
+    st.markdown(f"""
+        <style>
+        /* Force Form Submit Button to be Navy Blue */
+        div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
+            background-color: {INCENTRA_BLUE} !important;
+            color: white !important;
+            border: none !important;
+        }}
+        div[data-testid="stForm"] button[data-testid="stFormSubmitButton"]:hover {{
+            background-color: #162a53 !important; /* Slightly darker navy accent for hover state */
+            color: white !important;
+        }}
         
-        if st.form_submit_button("📧 Submit Assessment"):
-            if all([u_comp, u_name, u_email, u_phone]):
-                st.balloons()
-                st.success("Assessment submitted! We will contact you within 48 hours.")
+        /* Force 'Start Over Fresh' Button to be White with Navy Text/Border */
+        div[data-testid="stVerticalBlock"] > div:has(button[key="reset_btn_step3"]) button {{
+            background-color: white !important;
+            color: {INCENTRA_BLUE} !important;
+            border: 1px solid {INCENTRA_BLUE} !important;
+        }}
+        div[data-testid="stVerticalBlock"] > div:has(button[key="reset_btn_step3"]) button:hover {{
+            background-color: #f8f9fa !important;
+            border-color: {INCENTRA_GRAY} !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Split layout into Summary Information (Left) and Submission Form (Right)
+    col_summary, col_form = st.columns([1, 1], gap="large")
+    
+    with col_summary:
+        st.subheader("📊 Assessment Review")
+        
+        # --- LOCATION ANALYSIS SUMMARY ---
+        with st.container(border=True):
+            st.markdown("#### 📍 Location Analysis")
+            if st.session_state.batch_results is not None:
+                total_locs = len(st.session_state.batch_results)
+                
+                potential_opps = len(st.session_state.batch_results[
+                    (st.session_state.batch_results['Valid Address'] == "Yes") & 
+                    (st.session_state.batch_results['Designations'].str.strip() != "")
+                ])
+                
+                st.write(f"* **Locations Processed:** {total_locs}")
+                st.write(f"* **Locations with Potential Opportunities:** {potential_opps}")
             else:
-                st.warning("Please fill out all contact fields.")
+                st.caption("No address batch list was processed in Step 1.")
+
+        # --- HISTORICAL PROJECTS SUMMARY ---
+        with st.container(border=True):
+            st.markdown("#### 🏛️ Historical Projects Summary")
+            if st.session_state.form_data.get("hist_q") == "No" or not st.session_state.form_data.get("historical_projects"):
+                st.write("*No historical projects reported*")
+            else:
+                for p in st.session_state.form_data["historical_projects"]:
+                    f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
+                    f_type = f_type if f_type else "Not Specified"
+                    
+                    st.write(f"**{f_type}** | Investment: ${p.get('inv', '0')} ({p.get('inv_yr', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_yr', 'N/A')})")
+
+        # --- FUTURE PROJECTS SUMMARY ---
+        with st.container(border=True):
+            st.markdown("#### 🚀 Future Projects Summary")
+            if st.session_state.form_data.get("fut_q") == "No" or not st.session_state.form_data.get("future_projects"):
+                st.write("*No future projects reported*")
+            else:
+                for p in st.session_state.form_data["future_projects"]:
+                    f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
+                    f_type = f_type if f_type else "Not Specified"
+                    
+                    st.write(f"**{f_type}** | Investment: ${p.get('inv', '0')} ({p.get('inv_time', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_time', 'N/A')})")
+
+    with col_form:
+        with st.form("final_form"):
+            st.subheader("👤 Contact Information")
+            u_comp = st.text_input("Company Name *")
+            u_name = st.text_input("Contact Name *")
+            u_email = st.text_input("Email Address *")
+            u_phone = st.text_input("Phone Number *")
+            
+            if st.form_submit_button("📧 Submit Assessment"):
+                if all([u_comp, u_name, u_email, u_phone]):
+                    st.balloons()
+                    st.success("Assessment submitted! We will contact you within 48 hours.")
+                else:
+                    st.warning("Please fill out all contact fields.")
+
+        # Navigation buttons layout positioned neatly under the form container
+        st.write("") # Spacer padding
+        col_back, col_reset = st.columns(2)
+        col_back.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
+        col_reset.button("🔄 Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
 
 st.markdown('<div class="footer">© 2026 Incentra Specialty Tax. All rights reserved.</div>', unsafe_allow_html=True)
