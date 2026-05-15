@@ -42,6 +42,20 @@ def reset_app():
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="IncentraTax | Pro Batch Geocoder", layout="wide")
 
+# --- REMOVE INTERNAL STREAMLIT PADDING FOR EMBEDS ---
+st.markdown("""
+    <style>
+    /* Remove padding from the main app block container */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 INCENTRA_BLUE = "#213D77"
 INCENTRA_GRAY = "#818285"
 
