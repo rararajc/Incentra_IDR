@@ -47,27 +47,25 @@ img_base64 = get_base64_img(LOGO_FILE)
 # --- CSS FOR STICKY HEADER & STYLING ---
 st.markdown(f"""
     <style>
-    /* Ensure content starts below the fixed header */
+    /* Content starts higher up since header isn't floating */
     .block-container {{
-        padding-top: 8rem;
+        padding-top: 2rem;
     }}
 
-    /* Hide standard Streamlit header to use our custom one */
+    /* Hide standard Streamlit header */
     header[data-testid="stHeader"] {{
         display: none;
     }}
 
-    .sticky-logo-container {{
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background-color: white;
-        z-index: 9999;
-        padding: 15px 30px;
-        border-bottom: 2px solid #f0f2f6;
+    /* Container scrolls with the page instead of sticking */
+    .logo-container {{
+        position: relative;
         display: flex;
+        justify-content: center;
         align-items: center;
+        padding: 10px 0px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #f0f2f6;
     }}
 
     .stButton>button {{
@@ -76,6 +74,7 @@ st.markdown(f"""
         border-radius: 4px;
         border: none;
         padding: 0.5rem 1rem;
+        width: 100%; /* Better for mobile thumbs */
     }}
     .stButton>button:hover {{
         border: 1px solid {INCENTRA_GRAY};
@@ -85,17 +84,13 @@ st.markdown(f"""
     h1, h2, h3 {{ color: {INCENTRA_BLUE}; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
     
     .footer {{
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: white;
+        position: relative; /* Changed from fixed so it doesn't block form fields */
+        margin-top: 50px;
         color: {INCENTRA_GRAY};
         text-align: center;
-        padding: 10px;
+        padding: 20px;
         font-size: 12px;
         border-top: 1px solid #eee;
-        z-index: 999;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -103,14 +98,14 @@ st.markdown(f"""
 # --- BRANDING: STICKY LOGO ---
 if img_base64:
     st.markdown(f"""
-        <div class="sticky-logo-container">
-            <img src="data:image/png;base64,{img_base64}" width="300">
+        <div class="logo-container">
+            <img src="data:image/png;base64,{img_base64}" style="max-width: 85%; height: auto;">
         </div>
         """, unsafe_allow_html=True)
 else:
     st.markdown(f"""
-        <div class="sticky-logo-container">
-            <h2 style="margin:0; color:{INCENTRA_BLUE};">INCENTRA SPECIALTY TAX</h2>
+        <div class="logo-container">
+            <h2 style="margin:0; color:{INCENTRA_BLUE}; text-align: center;">INCENTRA SPECIALTY TAX</h2>
         </div>
         """, unsafe_allow_html=True)
 
@@ -235,14 +230,42 @@ if st.session_state.page == 'Step 1':
                     gdf = gpd.GeoDataFrame(clean_df, geometry=geometry, crs="EPSG:4326")
                     
                     final_results = merged.copy()
-                    final_results['Designations'] = ""
+                    final_results['County Tier'] = "N/A"
+                    final_results['Special Designations'] = ""
+                    
                     for key, layer_gdf in geodata.items():
                         joined = gpd.sjoin(gdf, layer_gdf, how="left", predicate="intersects")
                         matches = joined[joined.index_right.notnull()]
+                        
                         for idx in matches.index:
-                            final_results.at[idx, 'Designations'] += f"{key.upper()} "
+                            if key == "tiers":
+                                # Try to extract the tier value from common column name formats
+                                row_data = matches.loc[idx]
+                                tier_val = None
+                                for col in ['tier', 'Tier', 'TIER', 'tier_num', 'Tier_Num']:
+                                    if col in row_data:
+                                        tier_val = row_data[col]
+                                        break
+                                
+                                if tier_val is not None:
+                                    final_results.at[idx, 'County Tier'] = f"Tier {int(float(tier_val))}" if str(tier_val).replace('.','',1).isdigit() else f"Tier {tier_val}"
+                                else:
+                                    final_results.at[idx, 'County Tier'] = "Matched (Tier Unknown)"
+                            else:
+                                # Append other zone matches cleanly separated by commas
+                                current_designations = final_results.at[idx, 'Special Designations']
+                                name_label = key.upper().replace('_', ' ')
+                                if current_designations:
+                                    if name_label not in current_designations:
+                                        final_results.at[idx, 'Special Designations'] += f", {name_label}"
+                                else:
+                                    final_results.at[idx, 'Special Designations'] = name_label
+
+                    # Ensure empty designations read cleanly
+                    final_results['Special Designations'] = final_results['Special Designations'].replace("", "None")
                     
-                    st.session_state.batch_results = final_results[[address_col, 'Valid Address', 'Designations']]
+                    # Update the session state table view with our clean new columns
+                    st.session_state.batch_results = final_results[[address_col, 'Valid Address', 'County Tier', 'Special Designations']]
                     st.success(f"Analysis Finished!")
 
     # Table persistence check
@@ -319,7 +342,12 @@ elif st.session_state.page == 'Step 3':
 
     if st.session_state.batch_results is not None:
         total_locs = len(st.session_state.batch_results)
-        matches = len(st.session_state.batch_results[st.session_state.batch_results['Designations'].str.strip() != ""])
+        
+        # Count a match if it has a valid County Tier OR has a Special Designation listed
+        has_tier = st.session_state.batch_results['County Tier'] != "N/A"
+        has_designation = st.session_state.batch_results['Special Designations'] != "None"
+        matches = len(st.session_state.batch_results[has_tier | has_designation])
+        
         st.info(f"**Location Analysis:** {total_locs} locations were processed and {matches} matches were identified.")
 
     with st.form("final_send"):
@@ -334,7 +362,7 @@ elif st.session_state.page == 'Step 3':
                 # Eligibility Logic
                 has_fed_ez = False
                 if st.session_state.batch_results is not None:
-                    has_fed_ez = st.session_state.batch_results['Designations'].str.contains('FED_EZ', case=False).any()
+                    has_fed_ez = st.session_state.batch_results['Special Designations'].str.contains('FED_EZ', case=False).any()
 
                 total_inv = 0.0
                 total_jobs = 0
