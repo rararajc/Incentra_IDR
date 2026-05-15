@@ -243,6 +243,7 @@ elif st.session_state.page == 'Step 2':
             p_id = p['id']
             
             with st.container(border=True):
+                st.markdown(f"#### 🏛️ Historical Project {i+1}")
                 c1, c2 = st.columns(2)
                 p['desc'] = c1.text_input(f"1a. Project Description *", value=p.get('desc', ''), key=f"h1_{p_id}")
                 p['addr'] = c1.text_input(f"1b. Project Address *", value=p.get('addr', ''), key=f"h2_{p_id}")
@@ -282,6 +283,7 @@ elif st.session_state.page == 'Step 2':
             p_id = p['id']
             
             with st.container(border=True):
+                st.markdown(f"#### 🚀 Future Project {i+1}")
                 c1, c2 = st.columns(2)
                 p['desc'] = c1.text_input(f"2a. Project Description *", value=p.get('desc', ''), key=f"f1_{p_id}")
                 p['addr'] = c1.text_input(f"2b. Project Address *", value=p.get('addr', ''), key=f"f2_{p_id}")
