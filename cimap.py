@@ -200,9 +200,9 @@ def check_qualifying_opportunity():
                 return True, "Let's explore further for potential opportunities."
 
     if not has_valid_project:
-        return False, "No projects were submitted for analysis."
+        return False, "No projects were submitted for review."
 
-    return False, "Based on the information provided, there appears to be no immediate opportunity."
+    return False, "Based on the information provided, there appears to be no viable opportunity."
 
 def send_email_report(comp, name, email, phone, opportunity_status_text, is_qualifying):
     """Pulls credentials from st.secrets and emails evaluation summary along with an advanced Excel report."""
@@ -221,7 +221,7 @@ def send_email_report(comp, name, email, phone, opportunity_status_text, is_qual
     msg['To'] = RECIPIENT_EMAIL
     msg['Subject'] = f"Incentra Web Portal Lead: {comp}"
 
-    body = f"An assessment form has been generated via the online geocoder pipeline App.\n\n"
+    body = f"An assessment form has been generated via the online tax credit finder App.\n\n"
     body += f"--- CONTACT REGISTRATION ---\n"
     body += f"Company: {comp}\nContact Name: {name}\nEmail: {email}\nPhone: {phone}\n\n"
     body += f"--- AUTOMATED ASSESSMENT OUTCOME ---\n{opportunity_status_text}\n\n"
@@ -317,7 +317,7 @@ def send_email_report(comp, name, email, phone, opportunity_status_text, is_qual
     else:
         user_body = f"Hello {name},\n\n"
         user_body += f"Thank you for submission.\n\n"
-        user_body += f"Based on the information provided, there may not be viable tax credit opportunities at this time.\n\n"
+        user_body += f"Based on the information provided, there appears to be no viable tax credit opportunity at this time.\n\n"
         user_body += f"We encourage you to revisit us again when you have new investment or hiring plans.\n\n"
         user_body += f"Best regards,\nIncentra Specialty Tax Team"
 
