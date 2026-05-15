@@ -101,6 +101,16 @@ st.markdown(f"""
         letter-spacing: -0.02em !important;
     }}
 
+    /* Force Success Elements/Alerts to change from Green to Incentra Blue */
+    div[data-testid="stAlert"]:has(div[data-testid="stNotificationContentSuccess"]) {
+        background-color: rgba(33, 61, 119, 0.1) !important;
+        color: #213D77 !important;
+        border-color: #213D77 !important;
+    }
+    div[data-testid="stAlert"] p {
+        color: #213D77 !important;
+    }
+
     .footer {{
         text-align: center;
         padding: 20px;
@@ -397,7 +407,7 @@ if st.session_state.page == 'Step 1':
                                 final_results.at[idx, 'Designations'] += f"{key.upper()} "
                         
                         st.session_state.batch_results = final_results[[address_col, 'Valid Address', 'Designations']]
-                        st.success("Analysis Complete!")
+                        st.info("Analysis Complete!")
         except Exception as e:
             st.error(f"File Error: {e}. If using Excel, please ensure it is a standard .xlsx file.")
 
@@ -538,7 +548,7 @@ elif st.session_state.page == 'Step 3':
     # --- INCENTIVE SYSTEM OPPORTUNITY LOGIC FLAG ---
     is_qualifying, evaluation_text = check_qualifying_opportunity()
     if is_qualifying:
-        st.success(f"📈 Guidance Notice: {evaluation_text}")
+        st.info(f"📈 Guidance Notice: {evaluation_text}")
     else:
         st.warning(f"⚠️ Guidance Notice: {evaluation_text}")
     
@@ -603,7 +613,7 @@ elif st.session_state.page == 'Step 3':
                 
                 if email_sent:
                     st.balloons()
-                    st.success("Assessment submitted! We will contact you within two business days.")
+                    st.info("Assessment submitted! We will contact you within two business days.")
                 else:
                     st.error("Form data recorded locally, but secure mail delivery timed out.")
             else:
