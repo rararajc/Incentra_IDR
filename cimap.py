@@ -365,13 +365,14 @@ elif st.session_state.page == 'Step 3':
         if st.session_state.batch_results is not None:
             total_locs = len(st.session_state.batch_results)
             
+            # Count matches that successfully mapped to any of the geographic layers
             potential_opps = len(st.session_state.batch_results[
                 (st.session_state.batch_results['Valid Address'] == "Yes") & 
                 (st.session_state.batch_results['Designations'].str.strip() != "")
             ])
             
-            st.write(f"* **Locations Processed:** {total_locs}")
-            st.write(f"* **Locations with Potential Opportunities:** {potential_opps}")
+            st.write(f"* **{total_locs}** locations processed")
+            st.write(f"* **{potential_opps}** locations may be in a special zone")
         else:
             st.caption("No address batch list was processed in Step 1.")
 
