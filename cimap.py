@@ -319,18 +319,24 @@ elif st.session_state.page == 'Step 3':
     # Inject custom CSS for precise Step 3 layout overrides
     st.markdown(f"""
         <style>
-        /* Force Form Submit Button to be Navy Blue with Bold Red Font */
+        /* Force Form Submit Button to be Navy Blue with Bold Red Font and Heavy Highlights */
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
             background-color: {INCENTRA_BLUE} !important;
-            border: none !important;
+            border: 2px solid #FF0000 !important; /* Thick red outline matching the text */
+            box-shadow: 0px 4px 15px rgba(255, 0, 0, 0.2) !important; /* Soft red glow underneath */
+            transition: all 0.3s ease-in-out !important; /* Smooth animation transition */
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] p {{
-            color: #FF0000 !important; /* Pure Red Font */
-            font-weight: bold !important; /* Bold */
-            font-size: 16px !important;
+            color: #FF0000 !important; 
+            font-weight: bold !important; 
+            font-size: 18px !important; /* Slightly bumped up text size for visibility */
+            letter-spacing: 0.5px !important; /* Cleaner character spacing */
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"]:hover {{
             background-color: #162a53 !important;
+            border-color: #FF3333 !important; /* Brighter red border on hover */
+            transform: scale(1.02) !important; /* Subtle physically popping outward effect */
+            box-shadow: 0px 6px 20px rgba(255, 0, 0, 0.4) !important; /* Intensified red glow on hover */
         }}
         
         /* Transform 'Start Over Fresh' Button into a clean text link style aligned to the right */
