@@ -70,6 +70,25 @@ st.markdown(f"""
         background-color: transparent !important;
     }}
     
+    /* --- PASTE THE PATCH INSIDE HERE --- */
+    div[data-testid="stAlert"]:has(div[data-testid="stNotificationContentSuccess"]) {{
+        background-color: rgba(33, 61, 119, 0.1) !important;
+        color: #213D77 !important;
+        border-color: #213D77 !important;
+    }}
+    div[data-testid="stAlert"] p {{
+        color: #213D77 !important;
+    }}
+    
+    div[data-testid="stAlert"]:has(div[data-testid="stNotificationContentInfo"]) {{
+        background-color: rgba(33, 61, 119, 0.08) !important;
+        border-left: 5px solid #213D77 !important;
+    }}
+    div[data-testid="stAlert"]:has(div[data-testid="stNotificationContentInfo"]) svg {{
+        fill: #213D77 !important;
+    }}
+    /* ----------------------------------- */
+    
     .stApp {{
         background-color: transparent !important;
     }}
@@ -100,16 +119,6 @@ st.markdown(f"""
         font-weight: 400 !important;
         letter-spacing: -0.02em !important;
     }}
-
-    /* Force Success Elements/Alerts to change from Green to Incentra Blue */
-    div[data-testid="stAlert"]:has(div[data-testid="stNotificationContentSuccess"]) {
-        background-color: rgba(33, 61, 119, 0.1) !important;
-        color: #213D77 !important;
-        border-color: #213D77 !important;
-    }
-    div[data-testid="stAlert"] p {
-        color: #213D77 !important;
-    }
 
     .footer {{
         text-align: center;
