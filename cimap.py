@@ -62,73 +62,55 @@ INCENTRA_GRAY = "#818285"
 # --- CSS FOR CLEAN LAYOUT (NO OVERLAP) ---
 st.markdown(f"""
     <style>
-    /* Import a highly modern geometric font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-
+    
     header[data-testid="stHeader"] {{ display: none; }}
-
+    
     html, body, [class*="css"]  {{
         font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
         background-color: transparent !important;
     }}
-
-    /* Styling headers to match the sleek style of the screenshot */
-    h1, h2, h3, h4 { 
-        color: #2c2c2c !important; 
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 400 !important; /* Emulates the clean, non-bold look */
-        letter-spacing: -0.02em !important;
-    }
     
-    .stApp {
-    background-color: transparent !important;
-    }
-
-    /* Removes background and borders from st.container(border=True) and forms */
+    .stApp {{
+        background-color: transparent !important;
+    }}
+    
     div[data-testid="stGridBlock"] > div, 
     div[data-testid="stVerticalBlock"] > div,
-    div[data-testid="stForm"] {
+    div[data-testid="stForm"] {{
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
-    }
-
-    /* Keeps the logo container background transparent */
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        padding: 20px 0;
-        background-color: transparent !important;
-    }
+    }}
     
-    /* Modernize the primary buttons to match the dark pill shape in the image */
-    .stButton>button {
-        background-color: #1a1a1a !important; /* Dark charcoal/black color from image button */
+    .stButton>button {{
+        background-color: #1a1a1a !important;
         color: white !important;
-        border-radius: 50px !important; /* Full pill-shaped rounding like the image */
+        border-radius: 50px !important;
         font-family: 'Inter', sans-serif !important;
         font-weight: 500 !important;
         padding: 0.75rem 2rem !important;
         border: none !important;
-        letter-spacing: 0.5px !important;
-        text-transform: uppercase;
-        font-size: 14px !important;
-    }
+        font-size: 13px !important;
+        letter-spacing: 0.05em !important;
+    }}
     
-    h1, h2, h3 {{ color: {INCENTRA_BLUE}; font-family: 'Helvetica Neue', Arial, sans-serif; }}
+    h1, h2, h3, h4 {{ 
+        color: #2c2c2c !important; 
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 400 !important;
+        letter-spacing: -0.02em !important;
+    }}
     
     .logo-container {{
         display: flex;
         justify-content: center;
         padding: 20px 0;
-        background-color: white;
+        background-color: transparent !important;
     }}
     .logo-container img {{
         max-width: 280px;
         height: auto;
-    }}
-    @media (max-width: 640px) {{
-        .logo-container img {{ max-width: 160px; }}
     }}
 
     .footer {{
