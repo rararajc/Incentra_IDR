@@ -319,12 +319,19 @@ elif st.session_state.page == 'Step 3':
     # Inject custom CSS for precise Step 3 layout overrides
     st.markdown(f"""
         <style>
+        /* Center the Form Submit Button container block */
+        div[data-testid="stForm"] .stButton {{
+            display: flex;
+            justify-content: center;
+        }}
+        
         /* Force Form Submit Button to be Navy Blue with Bold Red Font and Heavy Highlights */
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
             background-color: {INCENTRA_BLUE} !important;
             border: 2px solid #FF0000 !important;
             box-shadow: 0px 4px 15px rgba(255, 0, 0, 0.2) !important;
             transition: all 0.3s ease-in-out !important;
+            width: 100% !important; /* Fills its optimized middle column layout */
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] p {{
             color: #FF0000 !important; 
@@ -335,7 +342,7 @@ elif st.session_state.page == 'Step 3':
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"]:hover {{
             background-color: #162a53 !important;
             border-color: #FF3333 !important;
-            transform: scale(1.01) !important;
+            transform: scale(1.02) !important;
             box-shadow: 0px 6px 20px rgba(255, 0, 0, 0.4) !important;
         }}
         
@@ -365,7 +372,6 @@ elif st.session_state.page == 'Step 3':
         if st.session_state.batch_results is not None:
             total_locs = len(st.session_state.batch_results)
             
-            # Count matches that successfully mapped to any of the geographic layers
             potential_opps = len(st.session_state.batch_results[
                 (st.session_state.batch_results['Valid Address'] == "Yes") & 
                 (st.session_state.batch_results['Designations'].str.strip() != "")
@@ -385,7 +391,6 @@ elif st.session_state.page == 'Step 3':
                 f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
                 f_type = f_type if f_type else "Not Specified"
                 
-                # Format investment with commas if it is a valid digit string
                 raw_inv = p.get('inv', '0').replace(',', '').strip()
                 formatted_inv = f"{int(raw_inv):,}" if raw_inv.isdigit() else p.get('inv', '0')
                 
@@ -401,7 +406,6 @@ elif st.session_state.page == 'Step 3':
                 f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
                 f_type = f_type if f_type else "Not Specified"
                 
-                # Format investment with commas if it is a valid digit string
                 raw_inv = p.get('inv', '0').replace(',', '').strip()
                 formatted_inv = f"{int(raw_inv):,}" if raw_inv.isdigit() else p.get('inv', '0')
                 
@@ -413,29 +417,30 @@ elif st.session_state.page == 'Step 3':
     with st.form("final_form"):
         st.subheader("👤 Contact Information")
         
-        # Split fields into 2 clean columns within the form area
         c1, c2 = st.columns(2, gap="medium")
-        
-        # Left Side Inputs
         u_comp = c1.text_input("Company Name *")
         u_name = c1.text_input("Contact Name *")
-        
-        # Right Side Inputs
         u_email = c2.text_input("Email Address *")
         u_phone = c2.text_input("Phone Number *")
         
-        # Highlighted submission button centered or filled underneath the details
-        if st.form_submit_button("📧 Submit Assessment"):
+        st.write("") # Spacer padding inside the form
+        
+        # Center the submit button using a balanced 3-column structural layout
+        btn_left, btn_middle, btn_right = st.columns([1, 2, 1])
+        with btn_middle:
+            submit_clicked = st.form_submit_button("📧 Submit Assessment")
+            
+        if submit_clicked:
             if all([u_comp, u_name, u_email, u_phone]):
                 st.balloons()
                 st.success("Assessment submitted! We will contact you within 48 hours.")
             else:
                 st.warning("Please fill out all contact fields.")
 
-    # Lower Footer Row containing the secondary back button and clean reset link
+    # Lower Footer Row containing navigation tools
     st.write("") 
     col_back, col_spacer, col_reset = st.columns([1.5, 3, 1.5])
     col_back.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
-    col_reset.button("🔄 Start Over", on_click=reset_app, key="reset_btn_step3")
+    col_reset.button("🔄 Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
 
 st.markdown('<div class="footer">© 2026 Incentra Specialty Tax. All rights reserved.</div>', unsafe_allow_html=True)
