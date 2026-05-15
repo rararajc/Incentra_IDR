@@ -101,17 +101,6 @@ st.markdown(f"""
         font-weight: 400 !important;
         letter-spacing: -0.02em !important;
     }}
-    
-    .logo-container {{
-        display: flex;
-        justify-content: center;
-        padding: 20px 0;
-        background-color: transparent !important;
-    }}
-    .logo-container img {{
-        max-width: 280px;
-        height: auto;
-    }}
 
     .footer {{
         text-align: center;
@@ -123,19 +112,6 @@ st.markdown(f"""
     }}
     </style>
     """, unsafe_allow_html=True)
-
-# --- BRANDING ---
-def get_base64_img(img_path):
-    try: return base64.b64encode(Path(img_path).read_bytes()).decode()
-    except: return None
-
-LOGO_FILE = "Logo - Incentra (Transparent).png"
-img_base64 = get_base64_img(LOGO_FILE)
-
-if img_base64:
-    st.markdown(f'<div class="logo-container"><img src="data:image/png;base64,{img_base64}"></div>', unsafe_allow_html=True)
-else:
-    st.markdown(f'<div class="logo-container"><h2>INCENTRA SPECIALTY TAX</h2></div>', unsafe_allow_html=True)
 
 # --- 3. DATA LAYERS ---
 @st.cache_data
@@ -172,7 +148,6 @@ def census_batch_geocode(df, address_col):
     except: return None
 
 def validate_step_2():
-    # Strict validation for 1a-1g
     if st.session_state.form_data["hist_q"] == "Yes":
         if not st.session_state.form_data["historical_projects"]: return False
         for p in st.session_state.form_data["historical_projects"]:
@@ -180,7 +155,6 @@ def validate_step_2():
                 return False
             if p.get('type') == "other" and not p.get('type_manual', '').strip():
                 return False
-    # Strict validation for 2a-2g
     if st.session_state.form_data["fut_q"] == "Yes":
         if not st.session_state.form_data["future_projects"]: return False
         for p in st.session_state.form_data["future_projects"]:
@@ -194,10 +168,10 @@ def validate_step_2():
 
 if st.session_state.page == 'Step 1':
     st.title("STEP 1: Tax Credit Finder")
-    st.info("💡 **Instructions:** Please upload your address list (Excel or CSV).")
+    st.info("Instructions: Please upload your address list (Excel or CSV).")
 
     # --- EXAMPLE FILE SECTION ---
-    st.markdown("### 📥 Download Template")
+    st.markdown("### Download Template")
     example_df = pd.DataFrame({
         "Full Address": [
             "200 Piedmont Ave SE, Atlanta, GA 30334",
@@ -206,11 +180,10 @@ if st.session_state.page == 'Step 1':
         ]
     })
     
-    # Convert dataframe to CSV for the download button
     csv = example_df.to_csv(index=False).encode('utf-8')
     
     st.download_button(
-        label="📂 Download Example Address List (.csv)",
+        label="Download Example Address List (.csv)",
         data=csv,
         file_name="Incentra_Template.csv",
         mime="text/csv",
@@ -222,13 +195,11 @@ if st.session_state.page == 'Step 1':
 
     if uploaded_file:
         try:
-            # FIX: Convert the uploaded file into a persistent Byte stream for mobile compatibility
             input_data = io.BytesIO(uploaded_file.getvalue())
             
             if uploaded_file.name.endswith('.csv'):
                 df = pd.read_csv(input_data)
             else:
-                # Explicitly use openpyxl for Excel files on mobile
                 df = pd.read_excel(input_data, engine='openpyxl')
             
             address_col = st.selectbox("Select address column:", df.columns)
@@ -257,11 +228,11 @@ if st.session_state.page == 'Step 1':
 
     if st.session_state.batch_results is not None:
         st.dataframe(st.session_state.batch_results, use_container_width=True)
-        st.button("Next: STEP 2: Quick Assessment ➡️", on_click=lambda: st.session_state.update({"page": "Step 2"}))
+        st.button("Next: STEP 2: Quick Assessment →", on_click=lambda: st.session_state.update({"page": "Step 2"}))
 
 elif st.session_state.page == 'Step 2':
     st.title("STEP 2: Quick Assessment")
-    st.button("⬅️ Back to Step 1", on_click=lambda: st.session_state.update({"page": "Step 1"}))
+    st.button("← Back to Step 1", on_click=lambda: st.session_state.update({"page": "Step 1"}))
     
     st.subheader("Historical Projects (Past 5 Years)")
     h_q = st.radio("1. Any past investment/hiring?", ["No", "Yes"], index=0 if st.session_state.form_data["hist_q"] == "No" else 1)
@@ -270,11 +241,9 @@ elif st.session_state.page == 'Step 2':
         if not st.session_state.form_data["historical_projects"]: 
             st.session_state.form_data["historical_projects"].append({"id": str(uuid.uuid4())})
         
-        # Track items marked for deletion
         hist_to_remove = None
         
         for i, p in enumerate(st.session_state.form_data["historical_projects"]):
-            # Ensure every project has a unique permanent ID for widget keys
             if 'id' not in p:
                 p['id'] = str(uuid.uuid4())
                 
@@ -293,14 +262,14 @@ elif st.session_state.page == 'Step 2':
                 p['jobs'] = c2.text_input(f"1f. Number of Net New Jobs Created *", value=p.get('jobs', ''), key=f"h6_{p_id}")
                 p['jobs_yr'] = c2.text_input(f"1g. Job Creation Year(s) *", value=p.get('jobs_yr', ''), key=f"h7_{p_id}")
                 
-                if st.button(f"🗑️ Remove Project {i+1}", key=f"del_h_{p_id}"):
+                if st.button(f"Remove Project {i+1}", key=f"del_h_{p_id}"):
                     hist_to_remove = i
 
         if hist_to_remove is not None:
             st.session_state.form_data["historical_projects"].pop(hist_to_remove)
             st.rerun()
             
-        if st.button("➕ Add Historical Project"):
+        if st.button("Add Historical Project +"):
             st.session_state.form_data["historical_projects"].append({"id": str(uuid.uuid4())})
             st.rerun()
 
@@ -311,7 +280,6 @@ elif st.session_state.page == 'Step 2':
         if not st.session_state.form_data["future_projects"]: 
             st.session_state.form_data["future_projects"].append({"id": str(uuid.uuid4())})
         
-        # Track items marked for deletion
         fut_to_remove = None
         
         for i, p in enumerate(st.session_state.form_data["future_projects"]):
@@ -333,23 +301,23 @@ elif st.session_state.page == 'Step 2':
                 p['jobs'] = c2.text_input(f"2f. Projected Number of Net New Jobs *", value=p.get('jobs', ''), key=f"f6_{p_id}")
                 p['jobs_time'] = c2.text_input(f"2g. Job Creation Timing *", value=p.get('jobs_time', ''), key=f"f7_{p_id}")
                 
-                if st.button(f"🗑️ Remove Project {i+1}", key=f"del_f_{p_id}"):
+                if st.button(f"Remove Project {i+1}", key=f"del_f_{p_id}"):
                     fut_to_remove = i
 
         if fut_to_remove is not None:
             st.session_state.form_data["future_projects"].pop(fut_to_remove)
             st.rerun()
             
-        if st.button("➕ Add Future Project"):
+        if st.button("Add Future Project +"):
             st.session_state.form_data["future_projects"].append({"id": str(uuid.uuid4())})
             st.rerun()
 
-    if st.button("Next: STEP 3 Summary ➡️"):
+    if st.button("Next: STEP 3 Summary →"):
         if validate_step_2():
             st.session_state.page = 'Step 3'
             st.rerun()
         else:
-            st.error("⚠️ Please fill out all required fields (*) for any projects you added.")
+            st.error("Please fill out all required fields (*) for any projects you added.")
 
 elif st.session_state.page == 'Step 3':
     st.title("STEP 3: Summary & Submission")
@@ -357,31 +325,27 @@ elif st.session_state.page == 'Step 3':
     # Inject custom CSS for precise Step 3 layout overrides (No custom HTML containers)
     st.markdown(f"""
         <style>
-        /* Force Form Submit Button to be Navy Blue with Bold Red Font and Heavy Highlights */
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
-            background-color: {INCENTRA_BLUE} !important;
-            border: 2px solid #FF0000 !important;
-            box-shadow: 0px 4px 15px rgba(255, 0, 0, 0.2) !important;
+            background-color: #1a1a1a !important;
+            border: none !important;
             transition: all 0.3s ease-in-out !important;
             width: 100% !important;
+            border-radius: 50px !important;
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] p {{
-            color: #FF0000 !important; 
-            font-weight: bold !important; 
-            font-size: 18px !important;
-            letter-spacing: 0.5px !important;
+            color: #ffffff !important; 
+            font-weight: 500 !important; 
+            font-size: 14px !important;
+            letter-spacing: 0.05em !important;
         }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"]:hover {{
-            background-color: #162a53 !important;
-            border-color: #FF3333 !important;
-            transform: scale(1.03) !important;
-            box-shadow: 0px 6px 20px rgba(255, 0, 0, 0.4) !important;
+            background-color: #333333 !important;
+            transform: scale(1.01) !important;
         }}
         
-        /* Transform 'Start Over Fresh' Button into a clean text link style aligned to the right */
         div[data-testid="stVerticalBlock"] > div:has(button[key="reset_btn_step3"]) button {{
             background-color: transparent !important;
-            color: {INCENTRA_BLUE} !important;
+            color: #1a1a1a !important;
             border: none !important;
             text-decoration: underline !important;
             text-align: right !important;
@@ -396,11 +360,11 @@ elif st.session_state.page == 'Step 3':
     """, unsafe_allow_html=True)
     
     # --- TOP SECTION: FULL WIDTH ASSESSMENT REVIEW ---
-    st.subheader("📊 Assessment Review")
+    st.subheader("Assessment Review")
     
     # Location Analysis
     with st.container(border=True):
-        st.markdown("#### 📍 Location Analysis")
+        st.markdown("#### Location Analysis")
         if st.session_state.batch_results is not None:
             total_locs = len(st.session_state.batch_results)
             
@@ -415,7 +379,7 @@ elif st.session_state.page == 'Step 3':
 
     # Historical Projects Summary
     with st.container(border=True):
-        st.markdown("#### 🏛️ Historical Projects Summary")
+        st.markdown("#### Historical Projects Summary")
         if st.session_state.form_data.get("hist_q") == "No" or not st.session_state.form_data.get("historical_projects"):
             st.write("*No historical projects reported*")
         else:
@@ -430,7 +394,7 @@ elif st.session_state.page == 'Step 3':
 
     # Future Projects Summary
     with st.container(border=True):
-        st.markdown("#### 🚀 Future Projects Summary")
+        st.markdown("#### Future Projects Summary")
         if st.session_state.form_data.get("fut_q") == "No" or not st.session_state.form_data.get("future_projects"):
             st.write("*No future projects reported*")
         else:
@@ -447,7 +411,7 @@ elif st.session_state.page == 'Step 3':
 
     # --- BOTTOM SECTION: CONTACT FORM & NAVIGATION ---
     with st.form("final_form"):
-        st.subheader("👤 Contact Information")
+        st.subheader("Contact Information")
         
         c1, c2 = st.columns(2, gap="medium")
         u_comp = c1.text_input("Company Name *")
@@ -455,12 +419,11 @@ elif st.session_state.page == 'Step 3':
         u_email = c2.text_input("Email Address *")
         u_phone = c2.text_input("Phone Number *")
         
-        st.write("") # Spacer padding
+        st.write("") 
         
-        # Using reliable native Streamlit columns to center the button layout perfectly
         col_btn_l, col_btn_m, col_btn_r = st.columns([1.5, 1, 1.5])
         with col_btn_m:
-            submit_clicked = st.form_submit_button("📧 Submit Assessment")
+            submit_clicked = st.form_submit_button("Submit Assessment")
             
         if submit_clicked:
             if all([u_comp, u_name, u_email, u_phone]):
@@ -469,10 +432,9 @@ elif st.session_state.page == 'Step 3':
             else:
                 st.warning("Please fill out all contact fields.")
 
-    # Lower Footer Row containing navigation tools
     st.write("") 
     col_back, col_spacer, col_reset = st.columns([1.5, 3, 1.5])
-    col_back.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
-    col_reset.button("🔄 Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
+    col_back.button("← Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
+    col_reset.button("Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
 
 st.markdown('<div class="footer">© 2026 Incentra Specialty Tax. All rights reserved.</div>', unsafe_allow_html=True)
