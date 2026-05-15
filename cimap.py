@@ -316,29 +316,36 @@ elif st.session_state.page == 'Step 2':
 elif st.session_state.page == 'Step 3':
     st.title("📋 STEP 3: Summary & Submission")
     
-    # Inject CSS targeting only the 'Start Over' button wrapper to make it white with dark text
+    # Inject custom CSS for precise Step 3 layout overrides
     st.markdown(f"""
         <style>
-        /* Force Form Submit Button to be Navy Blue */
+        /* Force Form Submit Button to be Navy Blue with Bold Red Font */
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
             background-color: {INCENTRA_BLUE} !important;
-            color: white !important;
             border: none !important;
         }}
+        div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] p {{
+            color: #FF0000 !important; /* Pure Red Font */
+            font-weight: bold !important; /* Bold */
+            font-size: 16px !important;
+        }}
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"]:hover {{
-            background-color: #162a53 !important; /* Slightly darker navy accent for hover state */
-            color: white !important;
+            background-color: #162a53 !important;
         }}
         
-        /* Force 'Start Over Fresh' Button to be White with Navy Text/Border */
+        /* Transform 'Start Over Fresh' Button into a clean text link style */
         div[data-testid="stVerticalBlock"] > div:has(button[key="reset_btn_step3"]) button {{
-            background-color: white !important;
+            background-color: transparent !important;
             color: {INCENTRA_BLUE} !important;
-            border: 1px solid {INCENTRA_BLUE} !important;
+            border: none !important;
+            text-decoration: underline !important;
+            text-align: right !important;
+            box-shadow: none !important;
+            padding: 0.6rem 0rem !important;
         }}
         div[data-testid="stVerticalBlock"] > div:has(button[key="reset_btn_step3"]) button:hover {{
-            background-color: #f8f9fa !important;
-            border-color: {INCENTRA_GRAY} !important;
+            color: {INCENTRA_GRAY} !important;
+            background-color: transparent !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -404,9 +411,9 @@ elif st.session_state.page == 'Step 3':
                 else:
                     st.warning("Please fill out all contact fields.")
 
-        # Navigation buttons layout positioned neatly under the form container
+        # Navigation row layout: pushes 'Back' to the left side and 'Start Over' link to the right side
         st.write("") # Spacer padding
-        col_back, col_reset = st.columns(2)
+        col_back, col_spacer, col_reset = st.columns([1.5, 3, 1.5])
         col_back.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
         col_reset.button("🔄 Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
 
