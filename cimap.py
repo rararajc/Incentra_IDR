@@ -313,14 +313,6 @@ elif st.session_state.page == 'Step 2':
         else:
             st.error("⚠️ Please fill out all required fields (*) for any projects you added.")
 
-The reason it wasn’t perfectly centered comes down to how Streamlit builds forms: it automatically pushes form submit buttons to the left edge of their native container, ignoring standard row alignments.
-
-To fix this and place it exactly in the mathematical center, we can bypass Streamlit's structural grid and use flexbox alignment directly in the CSS. While we are in there, we can wrap that bottom section in an active highlighted row callout box with a subtle light-gray background tint and soft rounded borders so it visually pops off the page.
-
-What to Replace
-Replace your entire elif st.session_state.page == 'Step 3': block from top to bottom with this pixel-perfect version:
-
-Python
 elif st.session_state.page == 'Step 3':
     st.title("📋 STEP 3: Summary & Submission")
     
