@@ -371,8 +371,7 @@ elif st.session_state.page == 'Step 3':
                 (st.session_state.batch_results['Designations'].str.strip() != "")
             ])
             
-            st.write(f"* **{total_locs}** locations processed")
-            st.write(f"* **{potential_opps}** locations may be in a special zone")
+            st.write(f"* **{total_locs}** locations processed and **{potential_opps}** locations may be in a special zone")
         else:
             st.caption("No address batch list was processed in Step 1.")
 
