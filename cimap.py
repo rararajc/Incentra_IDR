@@ -435,6 +435,6 @@ elif st.session_state.page == 'Step 3':
     st.write("") 
     col_back, col_spacer, col_reset = st.columns([1.5, 3, 1.5])
     col_back.button("← Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
-    col_reset.button("Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
+    col_reset.button("Start Over", on_click=reset_app, key="reset_btn_step3")
 
 st.markdown('<div class="footer">© 2026 Incentra Specialty Tax. All rights reserved.</div>', unsafe_allow_html=True)
