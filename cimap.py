@@ -205,7 +205,7 @@ def check_qualifying_opportunity():
     return False, "Based on an investment threshold under $500,000, less than 2 new jobs, or locations sitting outside a designated Federal Empowerment Zone (FED_EZ), there appears to be no immediate incentive optimization opportunity."
 
 def send_email_report(comp, name, email, phone, opportunity_status_text):
-    """Pulls credentials from st.secrets and emails evaluation summary directly."""
+    """Pulls credentials from st.secrets and emails evaluation summary along with an advanced Excel report."""
     try:
         SMTP_SERVER = st.secrets["smtp_server"]
         SMTP_PORT = int(st.secrets["smtp_port"])
@@ -225,35 +225,84 @@ def send_email_report(comp, name, email, phone, opportunity_status_text):
     body += f"--- CONTACT REGISTRATION ---\n"
     body += f"Company: {comp}\nContact Name: {name}\nEmail: {email}\nPhone: {phone}\n\n"
     body += f"--- AUTOMATED ASSESSMENT OUTCOME ---\n{opportunity_status_text}\n\n"
-
-    body += f"--- HISTORICAL DATA ---\n"
-    if st.session_state.form_data.get("hist_q") == "No":
-        body += "No historical timeline noted.\n\n"
-    else:
-        for idx, p in enumerate(st.session_state.form_data["historical_projects"]):
-            f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
-            body += f"Project {idx+1}: {p.get('desc', 'N/A')}\n - Address: {p.get('addr','N/A')}\n - Type: {f_type}\n - Capital Outlay: ${p.get('inv','0')} ({p.get('inv_yr','N/A')})\n - Headcount Shift: +{p.get('jobs','0')} ({p.get('jobs_yr','N/A')})\n\n"
-
-    body += f"--- STRATEGIC PIPELINE (FUTURE) ---\n"
-    if st.session_state.form_data.get("fut_q") == "No":
-        body += "No upcoming strategy fields declared.\n\n"
-    else:
-        for idx, p in enumerate(st.session_state.form_data["future_projects"]):
-            f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
-            body += f"Project {idx+1}: {p.get('desc', 'N/A')}\n - Address: {p.get('addr','N/A')}\n - Type: {f_type}\n - Projected Cost: ${p.get('inv','0')} ({p.get('inv_time','N/A')})\n - Target Headcount: +{p.get('jobs','0')} ({p.get('jobs_time','N/A')})\n\n"
-
+    
     msg.attach(MIMEText(body, 'plain'))
 
-    if st.session_state.batch_results is not None:
-        csv_buffer = io.StringIO()
-        st.session_state.batch_results.to_csv(csv_buffer, index=False)
-        filename = f"Batch_Layer_Matches_{comp.replace(' ', '_')}.csv"
-        part = MIMEBase('application', 'octet-stream')
-        part.set_payload(csv_buffer.getvalue().encode('utf-8'))
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f"attachment; filename= {filename}")
-        msg.attach(part)
+    # --- GENERATE COMPREHENSIVE MULTI-TAB EXCEL WORKBOOK ---
+    excel_buffer = io.BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+        
+        # Tab 1: Location Analysis (If address list was processed)
+        if st.session_state.batch_results is not None:
+            st.session_state.batch_results.to_sheet = "Location Analysis"
+            st.session_state.batch_results.to_excel(writer, sheet_name="Location Analysis", index=False)
+        else:
+            # Fallback placeholder if they skipped uploading a batch file
+            pd.DataFrame({"Notice": ["No batch file uploaded during Step 1."]}).to_excel(writer, sheet_name="Location Analysis", index=False)
+        
+        # Tab 2: Projects Overview (Consolidating form entries & contact cards)
+        project_rows = []
+        
+        # Extract Historical data
+        if st.session_state.form_data.get("hist_q") == "Yes":
+            for p in st.session_state.form_data.get("historical_projects", []):
+                project_rows.append({
+                    "Historical/Future": "Historical",
+                    "Description": p.get('desc', ''),
+                    "Address": p.get('addr', ''),
+                    "Facility Type": p.get('type', ''),
+                    "Specify Facility Type": p.get('type_manual', ''),
+                    "Investment": p.get('inv', ''),
+                    "Investment Year": p.get('inv_yr', ''),
+                    "New Jobs": p.get('jobs', ''),
+                    "Job Creation Year": p.get('jobs_yr', ''),
+                    "Company Name": comp,
+                    "Contact Name": name,
+                    "Email Address": email,
+                    "Phone Number": phone
+                })
+                
+        # Extract Future data
+        if st.session_state.form_data.get("fut_q") == "Yes":
+            for p in st.session_state.form_data.get("future_projects", []):
+                project_rows.append({
+                    "Historical/Future": "Future",
+                    "Description": p.get('desc', ''),
+                    "Address": p.get('addr', ''),
+                    "Facility Type": p.get('type', ''),
+                    "Specify Facility Type": p.get('type_manual', ''),
+                    "Investment": p.get('inv', ''),
+                    "Investment Year": p.get('inv_time', ''), # Maps to time window
+                    "New Jobs": p.get('jobs', ''),
+                    "Job Creation Year": p.get('jobs_time', ''), # Maps to time window
+                    "Company Name": comp,
+                    "Contact Name": name,
+                    "Email Address": email,
+                    "Phone Number": phone
+                })
+        
+        # Create Dataframe out of records. If empty, ensure column structures remain intact.
+        columns_structure = [
+            "Historical/Future", "Description", "Address", "Facility Type", "Specify Facility Type",
+            "Investment", "Investment Year", "New Jobs", "Job Creation Year", "Company Name",
+            "Contact Name", "Email Address", "Phone Number"
+        ]
+        
+        projects_df = pd.DataFrame(project_rows) if project_rows else pd.DataFrame(columns=columns_structure)
+        projects_df.to_excel(writer, sheet_name="Projects Analysis", index=False)
+        
+    # Set Excel binary pointer back to beginning before reading
+    excel_buffer.seek(0)
+    
+    # Attach workbook safely to mail instance
+    filename = f"Incentra_Assessment_{comp.replace(' ', '_')}.xlsx"
+    part = MIMEBase('application', 'vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    part.set_payload(excel_buffer.getvalue())
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', f"attachment; filename= {filename}")
+    msg.attach(part)
 
+    # --- SMTP TRANSMISSION ENGINE ---
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
