@@ -154,6 +154,28 @@ if st.session_state.page == 'Step 1':
     st.title("🏦 STEP 1: Tax Credit Finder")
     st.info("💡 **Instructions:** Please upload your address list (Excel or CSV).")
 
+    # --- EXAMPLE FILE SECTION ---
+    st.markdown("### 📥 Download Template")
+    example_df = pd.DataFrame({
+        "Full Address": [
+            "200 Piedmont Ave SE, Atlanta, GA 30334",
+            "1200 Glynn Ave, Brunswick, GA 31520",
+            "100 Bull St, Savannah, GA 31401"
+        ]
+    })
+    
+    # Convert dataframe to CSV for the download button
+    csv = example_df.to_csv(index=False).encode('utf-8')
+    
+    st.download_button(
+        label="📂 Download Example Address List (.csv)",
+        data=csv,
+        file_name="Incentra_Template.csv",
+        mime="text/csv",
+        help="Download this to see the correct format for your address list."
+    )
+    st.divider()
+    
     uploaded_file = st.file_uploader("Upload File", type=["csv", "xlsx"])
 
     if uploaded_file:
