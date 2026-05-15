@@ -333,7 +333,7 @@ elif st.session_state.page == 'Step 3':
             background-color: #162a53 !important;
         }}
         
-        /* Transform 'Start Over Fresh' Button into a clean text link style */
+        /* Transform 'Start Over Fresh' Button into a clean text link style aligned to the right */
         div[data-testid="stVerticalBlock"] > div:has(button[key="reset_btn_step3"]) button {{
             background-color: transparent !important;
             color: {INCENTRA_BLUE} !important;
@@ -350,7 +350,7 @@ elif st.session_state.page == 'Step 3':
         </style>
     """, unsafe_allow_html=True)
     
-    # Split layout into Summary Information (Left) and Submission Form (Right)
+    # Split layout into Summary Information (Left Column) and Submission Form (Right Column)
     col_summary, col_form = st.columns([1, 1], gap="large")
     
     with col_summary:
@@ -395,6 +395,10 @@ elif st.session_state.page == 'Step 3':
                     f_type = f_type if f_type else "Not Specified"
                     
                     st.write(f"**{f_type}** | Investment: ${p.get('inv', '0')} ({p.get('inv_time', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_time', 'N/A')})")
+        
+        # Place the Back button directly below the Future Projects container (Left Column)
+        st.write("") # Spacer padding
+        st.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
 
     with col_form:
         with st.form("final_form"):
@@ -411,10 +415,8 @@ elif st.session_state.page == 'Step 3':
                 else:
                     st.warning("Please fill out all contact fields.")
 
-        # Navigation row layout: pushes 'Back' to the left side and 'Start Over' link to the right side
+        # Place the Start Over Fresh link directly below the contact form container (Right Column)
         st.write("") # Spacer padding
-        col_back, col_spacer, col_reset = st.columns([1.5, 3, 1.5])
-        col_back.button("⬅️ Back to Step 2", on_click=lambda: st.session_state.update({"page": "Step 2"}), key="back_btn_step3")
-        col_reset.button("🔄 Start Over Fresh", on_click=reset_app, key="reset_btn_step3")
+        st.button("🔄 Start Over", on_click=reset_app, key="reset_btn_step3")
 
 st.markdown('<div class="footer">© 2026 Incentra Specialty Tax. All rights reserved.</div>', unsafe_allow_html=True)
