@@ -45,7 +45,6 @@ st.set_page_config(page_title="IncentraTax | Pro Batch Geocoder", layout="wide")
 # --- REMOVE INTERNAL STREAMLIT PADDING FOR EMBEDS ---
 st.markdown("""
     <style>
-    /* Remove padding from the main app block container */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
@@ -62,7 +61,7 @@ INCENTRA_GRAY = "#818285"
 # --- CSS FOR CLEAN LAYOUT (NO OVERLAP) ---
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600&display=swap');
     
     header[data-testid="stHeader"] {{ display: none; }}
     
@@ -126,7 +125,7 @@ def load_all_geodata():
     data = {}
     for key, file in LAYERS.items():
         try: data[key] = gpd.read_file(file).to_crs("EPSG:4326")
-        except: pass 
+        except: pass  
     return data
 
 geodata = load_all_geodata()
@@ -164,13 +163,114 @@ def validate_step_2():
                 return False
     return True
 
+def clean_numeric(val):
+    """Helper to convert string values with commas/symbols into clean integers safely."""
+    try:
+        cleaned = "".join(c for c in str(val) if c.isdigit())
+        return int(cleaned) if cleaned else 0
+    except:
+        return 0
+
+def check_qualifying_opportunity():
+    """Evaluates if any submitted projects cross thresholds or fall into the FED_EZ zone."""
+    has_valid_project = False
+    
+    # Track zone eligibility from step 1
+    in_federal_ez = False
+    if st.session_state.batch_results is not None:
+        if any("FED_EZ" in str(x) for x in st.session_state.batch_results['Designations']):
+            in_federal_ez = True
+
+    # Screen historical projects
+    if st.session_state.form_data.get("hist_q") == "Yes":
+        for p in st.session_state.form_data.get("historical_projects", []):
+            has_valid_project = True
+            inv = clean_numeric(p.get('inv', 0))
+            jobs = clean_numeric(p.get('jobs', 0))
+            if inv >= 500000 and jobs >= 2 and in_federal_ez:
+                return True, "Historical data meets qualification guidelines criteria."
+
+    # Screen future projects
+    if st.session_state.form_data.get("fut_q") == "Yes":
+        for p in st.session_state.form_data.get("future_projects", []):
+            has_valid_project = True
+            inv = clean_numeric(p.get('inv', 0))
+            jobs = clean_numeric(p.get('jobs', 0))
+            if inv >= 500000 and jobs >= 2 and in_federal_ez:
+                return True, "Future pipeline targets meet qualification guidelines criteria."
+
+    if not has_valid_project:
+        return False, "No active or pipeline projects were submitted for analysis."
+
+    return False, "Based on an investment threshold under $500,000, less than 2 new jobs, or locations sitting outside a designated Federal Empowerment Zone (FED_EZ), there appears to be no immediate incentive optimization opportunity."
+
+def send_email_report(comp, name, email, phone, opportunity_status_text):
+    """Pulls credentials from st.secrets and emails evaluation summary directly."""
+    try:
+        SMTP_SERVER = st.secrets["smtp_server"]
+        SMTP_PORT = int(st.secrets["smtp_port"])
+        SENDER_EMAIL = st.secrets["sender_email"]
+        SENDER_PASSWORD = st.secrets["sender_password"]
+        RECIPIENT_EMAIL = "jchoi@incentratax.com"
+    except KeyError as e:
+        st.error(f"Missing configuration key in secrets file: {e}")
+        return False
+
+    msg = MIMEMultipart()
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = RECIPIENT_EMAIL
+    msg['Subject'] = f"Incentra Web Portal Lead: {comp}"
+
+    body = f"An assessment form has been generated via the online geocoder pipeline App.\n\n"
+    body += f"--- CONTACT REGISTRATION ---\n"
+    body += f"Company: {comp}\nContact Name: {name}\nEmail: {email}\nPhone: {phone}\n\n"
+    body += f"--- AUTOMATED ASSESSMENT OUTCOME ---\n{opportunity_status_text}\n\n"
+
+    body += f"--- HISTORICAL DATA ---\n"
+    if st.session_state.form_data.get("hist_q") == "No":
+        body += "No historical timeline noted.\n\n"
+    else:
+        for idx, p in enumerate(st.session_state.form_data["historical_projects"]):
+            f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
+            body += f"Project {idx+1}: {p.get('desc', 'N/A')}\n - Address: {p.get('addr','N/A')}\n - Type: {f_type}\n - Capital Outlay: ${p.get('inv','0')} ({p.get('inv_yr','N/A')})\n - Headcount Shift: +{p.get('jobs','0')} ({p.get('jobs_yr','N/A')})\n\n"
+
+    body += f"--- STRATEGIC PIPELINE (FUTURE) ---\n"
+    if st.session_state.form_data.get("fut_q") == "No":
+        body += "No upcoming strategy fields declared.\n\n"
+    else:
+        for idx, p in enumerate(st.session_state.form_data["future_projects"]):
+            f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
+            body += f"Project {idx+1}: {p.get('desc', 'N/A')}\n - Address: {p.get('addr','N/A')}\n - Type: {f_type}\n - Projected Cost: ${p.get('inv','0')} ({p.get('inv_time','N/A')})\n - Target Headcount: +{p.get('jobs','0')} ({p.get('jobs_time','N/A')})\n\n"
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    if st.session_state.batch_results is not None:
+        csv_buffer = io.StringIO()
+        st.session_state.batch_results.to_csv(csv_buffer, index=False)
+        filename = f"Batch_Layer_Matches_{comp.replace(' ', '_')}.csv"
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(csv_buffer.getvalue().encode('utf-8'))
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f"attachment; filename= {filename}")
+        msg.attach(part)
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"SMTP Handshake Failure: {e}")
+        return False
+
 # --- PAGE ROUTING ---
 
 if st.session_state.page == 'Step 1':
     st.title("STEP 1: Quick Location Analysis")
     st.info("Instructions: Please upload your address list (Excel or CSV).")
 
-    # --- EXAMPLE FILE SECTION ---
     st.markdown("### Download Template")
     example_df = pd.DataFrame({
         "Full Address": [
@@ -322,7 +422,6 @@ elif st.session_state.page == 'Step 2':
 elif st.session_state.page == 'Step 3':
     st.title("STEP 3: Summary & Submission")
     
-    # Inject custom CSS for precise Step 3 layout overrides (No custom HTML containers)
     st.markdown(f"""
         <style>
         div[data-testid="stForm"] button[data-testid="stFormSubmitButton"] {{
@@ -359,25 +458,27 @@ elif st.session_state.page == 'Step 3':
         </style>
     """, unsafe_allow_html=True)
     
-    # --- TOP SECTION: FULL WIDTH ASSESSMENT REVIEW ---
     st.subheader("Assessment Review")
+
+    # --- INCENTIVE SYSTEM OPPORTUNITY LOGIC FLAG ---
+    is_qualifying, evaluation_text = check_qualifying_opportunity()
+    if is_qualifying:
+        st.success(f"📈 Guidance Notice: {evaluation_text}")
+    else:
+        st.warning(f"⚠️ Guidance Notice: {evaluation_text}")
     
-    # Location Analysis
     with st.container(border=True):
         st.markdown("#### Location Analysis")
         if st.session_state.batch_results is not None:
             total_locs = len(st.session_state.batch_results)
-            
             potential_opps = len(st.session_state.batch_results[
                 (st.session_state.batch_results['Valid Address'] == "Yes") & 
                 (st.session_state.batch_results['Designations'].str.strip() != "")
             ])
-            
             st.write(f"* **{total_locs}** locations processed and **{potential_opps}** locations may be in a special zone")
         else:
             st.caption("No address batch list was processed in Step 1.")
 
-    # Historical Projects Summary
     with st.container(border=True):
         st.markdown("#### Historical Projects Summary")
         if st.session_state.form_data.get("hist_q") == "No" or not st.session_state.form_data.get("historical_projects"):
@@ -386,13 +487,10 @@ elif st.session_state.page == 'Step 3':
             for p in st.session_state.form_data["historical_projects"]:
                 f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
                 f_type = f_type if f_type else "Not Specified"
-                
                 raw_inv = p.get('inv', '0').replace(',', '').strip()
                 formatted_inv = f"{int(raw_inv):,}" if raw_inv.isdigit() else p.get('inv', '0')
-                
                 st.write(f"**{f_type}** | Investment: ${formatted_inv} ({p.get('inv_yr', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_yr', 'N/A')})")
 
-    # Future Projects Summary
     with st.container(border=True):
         st.markdown("#### Future Projects Summary")
         if st.session_state.form_data.get("fut_q") == "No" or not st.session_state.form_data.get("future_projects"):
@@ -401,10 +499,8 @@ elif st.session_state.page == 'Step 3':
             for p in st.session_state.form_data["future_projects"]:
                 f_type = p.get('type_manual', '').strip() if p.get('type') == 'other' else p.get('type', '').title()
                 f_type = f_type if f_type else "Not Specified"
-                
                 raw_inv = p.get('inv', '0').replace(',', '').strip()
                 formatted_inv = f"{int(raw_inv):,}" if raw_inv.isdigit() else p.get('inv', '0')
-                
                 st.write(f"**{f_type}** | Investment: ${formatted_inv} ({p.get('inv_time', 'N/A')}) | New Jobs: {p.get('jobs', '0')} ({p.get('jobs_time', 'N/A')})")
     
     st.divider()
@@ -427,8 +523,14 @@ elif st.session_state.page == 'Step 3':
             
         if submit_clicked:
             if all([u_comp, u_name, u_email, u_phone]):
-                st.balloons()
-                st.success("Assessment submitted! We will contact you within two business days.")
+                with st.spinner("Transmitting assessment report safely..."):
+                    email_sent = send_email_report(u_comp, u_name, u_email, u_phone, evaluation_text)
+                
+                if email_sent:
+                    st.balloons()
+                    st.success("Assessment submitted! We will contact you within two business days.")
+                else:
+                    st.error("Form data recorded locally, but secure mail delivery timed out.")
             else:
                 st.warning("Please fill out all contact fields.")
 
