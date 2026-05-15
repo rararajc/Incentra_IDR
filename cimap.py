@@ -187,8 +187,8 @@ def check_qualifying_opportunity():
             has_valid_project = True
             inv = clean_numeric(p.get('inv', 0))
             jobs = clean_numeric(p.get('jobs', 0))
-            if inv >= 500000 and jobs >= 2 and in_federal_ez:
-                return True, "Historical data meets qualification guidelines criteria."
+            if inv >= 500000 or jobs >= 2 or in_federal_ez:
+                return True, "Let's explore further for potential opportunities."
 
     # Screen future projects
     if st.session_state.form_data.get("fut_q") == "Yes":
@@ -196,13 +196,13 @@ def check_qualifying_opportunity():
             has_valid_project = True
             inv = clean_numeric(p.get('inv', 0))
             jobs = clean_numeric(p.get('jobs', 0))
-            if inv >= 500000 and jobs >= 2 and in_federal_ez:
-                return True, "Future pipeline targets meet qualification guidelines criteria."
+            if inv >= 500000 or jobs >= 2 or in_federal_ez:
+                return True, "Let's explore further for potential opportunities."
 
     if not has_valid_project:
-        return False, "No active or pipeline projects were submitted for analysis."
+        return False, "No projects were submitted for analysis."
 
-    return False, "Based on an investment threshold under $500,000, less than 2 new jobs, or locations sitting outside a designated Federal Empowerment Zone (FED_EZ), there appears to be no immediate incentive optimization opportunity."
+    return False, "Based on the information provided, there appears to be no immediate opportunity."
 
 def send_email_report(comp, name, email, phone, opportunity_status_text):
     """Pulls credentials from st.secrets and emails evaluation summary along with an advanced Excel report."""
